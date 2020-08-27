@@ -253,7 +253,7 @@ def errorline(alllist,faillist, failmessage, failcriteria, faildict, percentform
         color = yellowrgb
     endstring = ""    
     if checkfile is not None:
-        endstring = "("+checkfile+")"
+        endstring = checkfile
     failstring = ""
 
     failstring = " [" +",".join('<b style="color:'+failcolor(faillist[i],greenrgb,yellowrgb)+';">'+currsample+"</b>"+":"+outformat(faildict[currsample]) for i, currsample in enumerate(alllist))+"]"
@@ -452,6 +452,8 @@ def getfragtypes(samplefile, trnainfo):
     pass
 
 
+def filelink(filename): 
+    return '<a href="'+filename+'">'+filename+'</a>' #file:///
 
 def checkreadtypes(samplename, sampleinfo, tgirtmode = False):
     trnapercentcutoff = .05
@@ -512,7 +514,7 @@ def checkreadtypes(samplename, sampleinfo, tgirtmode = False):
     badsizesamples = list(thresholdreadpercent[currsample] <  percentsizethreshold for currsample in samples )
     
     #print  str(len(badsizesamples)) +" samples have high rRNA read percentage ( > "+str(100*percentsizethreshold)+"% between "+str(minsizethreshold)+" and "+str(maxsizethreshold)+") [" +",".join(currsample+":"+str(rrnapercent[currsample]) for currsample in badsizesamples)+"]"
-    badsizeerr = errorset("trna_sizes",samples, badsizesamples, " < "+str(100*percentsizethreshold)+"% of reads between "+str(minsizethreshold)+" and "+str(maxsizethreshold) + " bases", "Read Percentage",thresholdreadpercent, percentformat = True, checkfile = samplename+"-readlengths.pdf")
+    badsizeerr = errorset("trna_sizes",samples, badsizesamples, " >= "+str(100*percentsizethreshold)+"% of reads between "+str(minsizethreshold)+" and "+str(maxsizethreshold) + " bases", "Read Percentage",thresholdreadpercent, percentformat = True, checkfile = samplename+"-readlengths.pdf")
 
 
     return [lowtrnaerr,highriboerr,highothererr,highlengtherr, badsizeerr]
@@ -603,13 +605,13 @@ def checkgenecounts(samplename, sampleinfo, trnainfo, tgirtmode = False):
     
     missingtrnasamples = list(thresholdreadpercent[currsample] < minactivepercent for currsample in samples)
     #print  str(len(missingtrnasamples)) +" samples have low tRNA read counts ( > "+str(100*minactivepercent)+"% between "+str(minsizethreshold)+" and "+str(maxsizethreshold)+") [" +",".join(currsample+":"+str(thresholdreadpercent[currsample]) for currsample in missingtrnasamples)+"]"
-    lowcounterr = errorset("trna_read_count",samples, missingtrnasamples, "< "+str(100*minactivepercent)+"% of tRNAs with more than "+str(minreadcount) + " reads","Percentage of tRNAs" ,thresholdreadpercent, percentformat = True, checkfile = samplename+"-tRNAcounts.txt")
+    lowcounterr = errorset("trna_read_count",samples, missingtrnasamples, ">= "+str(100*minactivepercent)+"% of tRNAs with more than "+str(minreadcount) + " reads","Percentage of tRNAs" ,thresholdreadpercent, percentformat = True, checkfile = samplename+"-tRNAcounts.txt")
     
     #gotta fix ***
     samplesizefactors = {currsample : sizefactors.sizefactors[currsample] for currsample in samples}
 
     badsizefactors = list(samplesizefactors[currsample] > sizefactordiff or samplesizefactors[currsample] < (1./sizefactordiff) for currsample in samples)
-    sizefactorerr = errorset("size_factors",samples, badsizefactors, "DESeq2 sizefactor differences < "+str(sizefactordiff)+"x","Size Factor" ,samplesizefactors,checkfile = samplename+"-SizeFactors.txt")
+    sizefactorerr = errorset("size_factors",samples, badsizefactors, "DESeq2 size factor differences < "+str(sizefactordiff)+"x","Size Factor" ,samplesizefactors,checkfile = samplename+"-SizeFactors.txt")
 
     #errorsingle(min(sizefactors.sizefactors.values())*sizefactordiff <  min(sizefactors.sizefactors.values()), "large DESeq2 sizefactor differences", " > "+str(sizefactordiff)+"x")
     
@@ -706,10 +708,10 @@ def main(**args):
     
 
     print >>outputfile, "<body>"
-    if tgirtmode:
-        print >>outputfile, "<p>In TGIRT mode for tRNA transcript analysis</p>"
-    else:
-        print >>outputfile, "<p>In ARMSeq mode for tRNA fragment analysis</p>"
+    #if tgirtmode:
+    #    print >>outputfile, "<p>In TGIRT mode for tRNA transcript analysis</p>"
+    #else:
+    #    print >>outputfile, "<p>In ARMSeq mode for tRNA fragment analysis</p>"
         
     print >>outputfile, '<a name="summary"><h4>Summary</h4></a>'
     prepresults = list()
@@ -735,7 +737,7 @@ def main(**args):
         color = "rgb(60,170,113)"
         errlvl = currtest.getteststatus()
         color = currtest.gettestcolor()
-        print >>outputfile, '<b style="color:{color};">{msg}</b> <a href="#{testname}">{criteria}</a> ({filename})</br>'.format(color = color, msg = errlvl, testname = currtest.shortname, criteria = currtest.criteria, filename = currtest.checkfile)
+        print >>outputfile, '<b style="color:{color};">{msg}</b> <a href="#{testname}">{criteria}</a> ({filename})</br>'.format(color = color, msg = errlvl, testname = currtest.shortname, criteria = currtest.criteria, filename = filelink(currtest.checkfile))
 
     print >>outputfile, "</p>"
     

@@ -34,6 +34,8 @@ from scipy.spatial.distance import euclidean
 
 ~/pythonsource/TRAX/modelmismatch.py --covfile=sharma2017samples/sharma2017samples-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=sharma2017_samples.txt  --runname=sharma2017mism 
 
+~/pythonsource/TRAX/modelmismatch.py --covfile=cruzsamples/cruzsamples-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=cruzsamples.txt  --runname=cruzsamplesmism 
+
 
 ~/pythonsource/TRAX/modelmismatch.py --covfile=ottrfullmouse/ottrfullmouse-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=mousevirusfull.txt  --runname=ottrfullmousec
 '''
