@@ -109,13 +109,20 @@ class trnadatabase:
         self.trnafasta = dbname+"-maturetRNAs.fa"
         self.modomics = dbname+"-modomics.txt"
         self.otherseqs = dbname+"-otherseqs.txt"
+        self.dbinfo = dbname+"-dbinfo.txt"
     def test(self):
         bowtie2job = subprocess.Popen(["bowtie2","-x",self.bowtiedb, "-U", scriptdir+"test.fq"],stdout = subprocess.PIPE,stderr = subprocess.STDOUT )
         rstatsresults = rstatsjob.communicate()[0]
         if bowtie2job.returncode  != 0:
                 print >>sys.stderr, "bowtie2 failed to run"
-
-        
+    def getorgtype(self):
+        orgtype = "euk"
+        for currline in open(self.dbinfo):
+            fields = currline.split()
+            if fields[0] == "orgmode":
+                orgtype = fields[1]
+        return orgtype
+            
 class expdatabase:
     def __init__(self, expname):
         self.expname = expname
@@ -200,13 +207,14 @@ def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, ignoresizefactors
 
         runrscript(scriptdir+"/readlengthhistogram.R",expinfo.trnalengthfile,expinfo.trnalengthplot)
         
-def gettrnacoverage(samplefile, trnainfo,expinfo, ignoresizefactors = False, cores = 8):
+def gettrnacoverage(samplefile, trnainfo,expinfo, orgtype = "euk",ignoresizefactors = False, cores = 8):
+    #print >>sys.stderr, orgtype
     if not ignoresizefactors:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign,lociedgemargin=30,sizefactors=expinfo.sizefactors,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign,lociedgemargin=30,sizefactors=expinfo.sizefactors,orgtype = orgtype,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")
     else:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname,orgtype = orgtype,allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")
@@ -411,6 +419,8 @@ if bedfiles is not None:
 
 
 trnainfo = trnadatabase(dbname)
+orgtype = trnainfo.getorgtype()
+#print >>sys.stderr, orgtype
 expinfo = expdatabase(expname)
 getsamples = samplefile(samplefilename)
 if len(getsamples.getsamples()) == 1:
@@ -535,7 +545,8 @@ counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles, ignoresizefactors
 
 #coverage plot of tRNAs
 print >>sys.stderr, "Generating Read Coverage plots"      
-gettrnacoverage(samplefilename, trnainfo,expinfo, ignoresizefactors = nosizefactors, cores = cores)
+#print >>sys.stderr, orgtype
+gettrnacoverage(samplefilename, trnainfo,expinfo,orgtype = orgtype, ignoresizefactors = nosizefactors, cores = cores)
 
 #coverage plot of pre-tRNAs
 #getlocuscoverage(samplefilename, trnainfo,expinfo, nosizefactors)

@@ -59,7 +59,10 @@ class readcoverage:
         return self.coverage
     def coveragealign(self, alignment, gapoutput = None,sizefactor = 1):
         if len(self.coverage) != len(string.translate(alignment, None, str(gapchars))):
-            print >>sys.stderr, "Alignment length does not match bed length "+str(len(self.coverage))+" "+str(len(string.translate(alignment, None, str(gapchars))))   
+            print >>sys.stderr, "Alignment length does not match bed length "+str(len(self.coverage))+" "+str(len(string.translate(alignment, None, str(gapchars)))) 
+            print >>sys.stderr, self.coverage
+            print >>sys.stderr, string.translate(alignment, None, str(gapchars))
+            sys.exit(1)
         i = 0
         lastcoverage = None
         for curr in alignment:
@@ -111,16 +114,24 @@ def sumsamples(coverage,sampledata, repname, currfeat, sizefactors = defaultdict
     
 count = 0
 
-positions = list([-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76])
+eukpositions = list([-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76])
+archpositions = list([-1,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76])
+
+
 
 #print >>sys.stderr, len(positions)
 #this gets the tRNA numbers by the sprinzel numbering system
-def gettnanums(trnaalign, margin = 0):
+def gettnanums(trnaalign, margin = 0, orgtype = "euk"):
     trnanum = list()
     currcount = 0
     enum = 1
     gapnum = 1
     intronnum = 1
+    positions = eukpositions 
+    if orgtype == "arch":
+    	positions = archpositions
+    elif orgtype = "mito"
+        positions = eukpositions
     for i in range(margin):
         trnanum.append('head'+str(margin - i))
     for i, struct in enumerate(trnaalign.consensus):
@@ -281,7 +292,7 @@ def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches =
         trimreadmismatches[currfeat.name] =  readcoverage(trnalist[i])
         readcounts[currfeat.name] = 0
 
-
+        #print >>sys.stderr, trnalist[i]
         for currread in getbam(bamfile, trnalist[i]):
             
 
@@ -609,6 +620,10 @@ def testmain(**argdict):
     trnastk = list(readrnastk(open(argdict["stkfile"], "r")))[0]
     bedfile = argdict["bedfile"]
     locibed = argdict["locibed"]
+    orgtype = "euk"
+    if "orgtype" in argdict:
+        orgtype = argdict["orgtype"]
+        
     locistk = list(readrnastk(open(argdict["locistk"], "r")))[0]
     sizefactor = defaultdict(lambda: 1)
     if argdict["sizefactors"]:
@@ -632,7 +647,10 @@ def testmain(**argdict):
     #gettnanums
     lociedgemargin = argdict["lociedgemargin"]
 
-    positionnums = gettnanums(trnastk, margin = edgemargin)
+    positionnums = gettnanums(trnastk, margin = edgemargin, orgtype = orgtype)
+    #print(orgtype)
+    #print(positionnums)
+    #print(trnastk.aligns["tRNA-Arg-TCG-1"])
     locipositionnums = gettnanums(locistk, margin = lociedgemargin)
     trnastk = trnastk.addmargin(edgemargin)
     locistk = locistk.addmargin(lociedgemargin)

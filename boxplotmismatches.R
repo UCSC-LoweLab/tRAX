@@ -193,7 +193,7 @@ if(nrow(fiveprimeamino) < 1){
 next
 }
 fiveprimeaminoposagg = aggregate(fiveprimeamino$percentstart, by=list( Sample = Sampletable[match(fiveprimeamino$Sample,Sampletable[,1]),2],Position=fiveprimeamino$position ), FUN=mean) 
-#print("||***")
+#print("||***ag1")
 fiveprimeaminoposagg <- fiveprimeaminoposagg[fiveprimeaminoposagg$Position %in% positionorder,]
 fiveprimeaminoposagg$Position = factor(fiveprimeaminoposagg$Position, levels = positionorder)
 
@@ -216,9 +216,9 @@ currplot = ggplot(fiveprimeaminoposagg,aes(x = Sample, y = x,fill = Position, st
 
 ggsave(paste(directory,"/",expname,"-",curramino ,"_fiveprimecounts",outputformat,sep= ""), currplot)
 
-
+#print(threeprimeamino$percentstart)
 threeprimeaminoposagg = aggregate(threeprimeamino$percentstart, by=list( Sample = Sampletable[match(threeprimeamino$Sample,Sampletable[,1]),2],Position=threeprimeamino$position ), FUN=mean) 
-#print("||***")
+#print("||***ag2")
 threeprimeaminoposagg <- threeprimeaminoposagg[threeprimeaminoposagg$Position %in% positionorder,]
 threeprimeaminoposagg$Position = factor(threeprimeaminoposagg$Position, levels = positionorder)
 
@@ -242,7 +242,7 @@ currplot = ggplot(threeprimeaminoposagg,aes(x = Sample, y = x,fill = Position, s
 ggsave(paste(directory,"/",expname,"-",curramino ,"_threeprimecounts",outputformat,sep= ""), currplot)
 #print(head(threeprimeamino))
 #print(max(threeprimeamino$percentstart))
-
+#print("||***ag3")
 fiveprimeaminoposagg = aggregate(fiveprimeamino$percentstart, by=list( Sample = Sampletable[match(fiveprimeamino$Sample,Sampletable[,1]),2],position=fiveprimeamino$position, Feature = fiveprimeamino$Feature ), FUN=mean) 
 
 fiveprimeaminoposagg$percentstart = fiveprimeaminoposagg$x
@@ -262,7 +262,7 @@ ggsave(paste(directory,"/",expname,"-",curramino ,"_fiveprimeheatmap",outputform
 
 
 
-
+#print("||***ag4")
 threeprimeaminoposagg = aggregate(threeprimeamino$percentstart, by=list( Sample = Sampletable[match(threeprimeamino$Sample,Sampletable[,1]),2],position=threeprimeamino$position, Feature = threeprimeamino$Feature ), FUN=mean)
 #print(head(threeprimeaminoposagg))
 threeprimeaminoposagg$percentstart = threeprimeaminoposagg$x
@@ -280,7 +280,7 @@ currplot = ggplot(threeprimeaminoposagg,aes(x = position,y= Sample, fill = perce
 
 
 ggsave(paste(directory,"/",expname,"-",curramino ,"_threeprimeheatmap",outputformat,sep= ""), currplot,height=.25*length(unique(fiveprimeamino$Feature))*length(unique(fiveprimeamino$Sample)),width=.25*length(unique(fiveprimeamino$position)), limitsize=FALSE)
-
+#print("||***ag5")
 mismatchaminoposagg = aggregate(mismatchamino$percentmismatch, by=list( Sample = Sampletable[match(mismatchamino$Sample,Sampletable[,1]),2],position=mismatchamino$position, Feature = mismatchamino$Feature ), FUN=mean)
 #print("**::")
 #print(head(mismatchaminoposagg))
@@ -302,6 +302,7 @@ currplot = ggplot(mismatchaminoposagg,aes(x = position,y= Sample, fill = percent
 ggsave(paste(directory,"/",expname,"-",curramino ,"_mismatchheatmap",outputformat,sep= ""), currplot,height=.25*length(unique(fiveprimeamino$Feature))*length(unique(fiveprimeamino$Sample)),width=.25*length(unique(fiveprimeamino$position)), limitsize=FALSE)
 
 #deletionmelt$adenines+deletionmelt$thymines+deletionmelt$cytosines+deletionmelt$guanines
+#print("||***ag6")
 deleteaminoposagg = aggregate(deleteamino$percentdelete, by=list( Sample = Sampletable[match(deleteamino$Sample,Sampletable[,1]),2],position=deleteamino$position, Feature = deleteamino$Feature ), FUN=mean)
 #print("**::")
 #print(head(deleteaminoposagg))
@@ -326,9 +327,10 @@ ggsave(paste(directory,"/",expname,"-",curramino ,"_deletionheatmap",outputforma
 
 }
 
-#print("||**||")
+print("||**||")
+print(positionorder)
 for (currpos in positionorder){
-#print(currpos)
+print(currpos)
 poslabel = ifelse(currpos == "-1", "neg1", currpos)
 
 mismatchmelt = mismatches[mismatches$position == currpos,c("Feature","Sample","percentmismatch")]
@@ -337,12 +339,17 @@ fiveprimemelt = mismatches[mismatches$position == currpos,c("Feature","Sample","
 fiveprimemelt$percentstart = fiveprimemelt$readstarts/fiveprimemelt$tRNAreadstotal
 
 
+if(nrow(fiveprimemelt) == 0){
+next
+}
 
 #deletionmelt$deletepercent = deletionmelt$deletions/(deletionmelt$deletions + deletionmelt$adenines+deletionmelt$thymines+deletionmelt$cytosines+deletionmelt$guanines + 30)
 
+#print("**fiveprimeagg")
+#print(head(fiveprimemelt))
 
 fiveprimeagg <- aggregate(fiveprimemelt$percentstart, by=list(Feature = fiveprimemelt$Feature, Sample = Sampletable[match(fiveprimemelt$Sample,Sampletable[,1]),2]), FUN=mean)
-#print(head(fiveprimeagg))
+print(head(fiveprimeagg))
 colnames(fiveprimeagg) <- c("Feature","Sample","percentstart")
 
 posname = paste(directory,"/",expname,"-",poslabel,"_possamplereadstarts",outputformat, sep = "")

@@ -17,15 +17,11 @@ def main(**args):
     args = defaultdict(lambda: None, args)
     stkfile = args["stkfile"]
     genomefile = os.path.expanduser(args["genomefile"])
-    mitomode = args["mitomode"]
     trnalocifile = args["trnaloci"]
     
     scriptdir = os.path.dirname(os.path.realpath(sys.argv[0]))+"/"        
-    
-    if mitomode:
-        trnacmfile = scriptdir+'TRNAinf.cm'
-    else:
-        trnacmfile = scriptdir+'TRNAinf-euk.cm'
+    trnacmfile = args["cmmodel"]
+
     
     trnaloci = list(readbed(trnalocifile, orgdb = "genome", seqfile=genomefile))
     lociseqs = getseqdict(trnaloci, faifiles = {"genome":genomefile+".fai"})
@@ -53,8 +49,8 @@ if __name__ == "__main__":
                        help='fasta file of genome')
     parser.add_argument('--stkfile',
                        help='stockholm output file')
-    parser.add_argument('--mitomode', action="store_true", default=False,
-                       help='Use mitochondrial models')
+    parser.add_argument('--cmmodel', 
+                       help='covariance model to use')
     args = vars(parser.parse_args())
     main(args)    
 

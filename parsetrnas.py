@@ -44,12 +44,14 @@ class tRNAtranscript:
         self.name = name
 
         self.rawseq = rawseq
-    def getmatureseq(self):
+    def getmatureseq(self, addcca = True):
         prefix = ""
         #print >>sys.stderr, self.amino
         if self.amino == "His":
             prefix = "G"
-        end = "CCA"
+        end = ""
+        if addcca:
+            end = "CCA"
         return prefix + self.seq + end 
     
             

@@ -363,7 +363,11 @@ class typecount:
     def gettrnapercent(self, sample):
         return (self.typecounts[sample]["tRNA"] + self.typecounts[sample]["pretRNA"] )/ (1.*self.gettotal(sample))
     def getrrnapercent(self, sample):
-        return self.typecounts[sample]["rRNA"] / (1.*self.gettotal(sample))
+        if "rRNA" in self.typecounts[sample]:
+            
+            return self.typecounts[sample]["rRNA"] / (1.*self.gettotal(sample))
+        else:
+            return None
     def getotherpercent(self, sample):
         return (self.typecounts[sample]["other"]) / (1.*self.gettotal(sample))
 def gettypecounts(samplename, sampleinfo):

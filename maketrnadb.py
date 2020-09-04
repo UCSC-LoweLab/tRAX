@@ -39,6 +39,8 @@ parser.add_argument('--gtrnafafile',
                    help='Fasta file of tRNA sequences from gtRNAdb')
 parser.add_argument('--namemapfile',
                    help='Name mapping from gtRNAdb')
+parser.add_argument('--orgmode',
+                   help='organism mode (euk/arch/bact/mito, default euk)')
 
 
 def shellcall(shellcommand,failquit = False):
@@ -60,6 +62,7 @@ scanfile = args.trnascanfile
 genomefile = args.genomefile
 gtrnafafile = args.gtrnafafile
 namemapfile = args.namemapfile
+orgmode = args.orgmode
 addseqs = args.addseqs
 dbdirectory = os.path.dirname(dbname) + "/"
 if dbdirectory == "/":
@@ -85,11 +88,31 @@ get_location("bowtie2-build")
 if not os.path.isfile(genomefile+".fai"):
     shellcall("samtools faidx "+genomefile)
     
-    
+scriptdir = os.path.dirname(os.path.realpath(sys.argv[0]))+"/"
+
+''''
+cmbuild --enone --hand -F
+
+'''
+prokmode = False
+if orgmode is None:
+    orgmode = "euk"
+
+if orgmode == "euk":
+    maturemodel =  scriptdir+'trnamature-euk.cm'
+    trnamodel =  scriptdir+'TRNAinf-euk.cm'
+elif orgmode == "arch":
+    maturemodel =  scriptdir+'trnamature-arch.cm'
+    trnamodel =  scriptdir+'TRNAinf-arch.cm'
+    prokmode = True
+elif orgmode == "mito":
+    maturemodel =  scriptdir+'TRNAMatureMitoinf.cm'
+    trnamodel =  scriptdir+'TRNAinf.cm'
+    prokmode = True
 
 
-getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=dbdirectory+dbname+"-trnaalign.stk",locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa")
-aligntrnalocus.main(genomefile=genomefile,stkfile=dbdirectory+dbname+"-trnaloci.stk",trnaloci=dbdirectory+dbname+"-trnaloci.bed")
+getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=dbdirectory+dbname+"-trnaalign.stk",locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)
+aligntrnalocus.main(genomefile=genomefile,stkfile=dbdirectory+dbname+"-trnaloci.stk",trnaloci=dbdirectory+dbname+"-trnaloci.bed", cmmodel = trnamodel)
 seqfiles = dict()
 newseqs = dict()
 seqfastaname = ""
@@ -143,7 +166,9 @@ print >>dbinfo, "time\t"+str(runtime)+"("+str(loctime[1])+"/"+str(loctime[2])+"/
 print >>dbinfo, "creation\t"+" ".join(sys.argv)
 print >>dbinfo, "genomefile\t"+str(genomefile)
 print >>dbinfo, "trnascanfile\t"+str(scanfile)
+print >>dbinfo, "orgmode\t"+str(orgmode)
 print >>dbinfo, "git version\t"+str(gitversion)
+
 if addseqs:
     print >>dbinfo, "additional transcripts\t"+" ".join(name+":"+source for name, source in seqfiles.iteritems())
 

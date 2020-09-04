@@ -25,6 +25,7 @@ def main(**args):
     else:
         maturetrnafa=sys.stdout
     gtrnatrans = None
+    prokmode = args["prokmode"]
     if args["namemap"]:
         gtrnafa = open(args["namemap"], "r")
         gtrnatrans = dict()
@@ -81,7 +82,6 @@ def main(**args):
     '''    
  
     alltrnas = list(getuniquetRNAs(trnascantrnas)) + trnacentraltrnas + trnadbtrnas
-    mitomode = args["mitomode"]
     trnabed = None
     if args["bedfile"]:
         trnabed = open(args["bedfile"], "w")
@@ -115,15 +115,13 @@ def main(**args):
             
             
     scriptdir = os.path.dirname(os.path.realpath(sys.argv[0]))+"/"
-    
-    if mitomode:
-        trnacmfile = scriptdir+'TRNAMatureMitoinf.cm'
-    else:
-        trnacmfile = scriptdir+'trnamature-euk.cm'
+    trnacmfile = args["cmmodel"]
+
+        
     stkfile = args["trnaalignment"]
     if args["trnaalignment"]:
         devnull = open(os.devnull, 'w')
-        seqfile = tempmultifasta(((currtrans.name, currtrans.getmatureseq()) for currtrans in alltrnas))
+        seqfile = tempmultifasta(((currtrans.name, currtrans.getmatureseq(addcca = not prokmode)) for currtrans in alltrnas))
         cmcommand = ['cmalign', "-o", stkfile,"--nonbanded", "--notrunc","-g",trnacmfile,seqfile.name]
         #print >>sys.stderr, " ".join(cmcommand)
         cmrun = subprocess.Popen(cmcommand, stdout = devnull)
@@ -144,11 +142,12 @@ def main(**args):
         trnalist.append(name)
         #print >>sys.stderr, name
         print >>maturetrnafa, ">"+name
-        print >>maturetrnafa, str("N" * margin) +currtrans.getmatureseq()+str("N" * margin)
+        matureseq = currtrans.getmatureseq(addcca = not prokmode)
+        print >>maturetrnafa, str("N" * margin) +matureseq+str("N" * margin)
         if trnatable is not None:
             print >>trnatable, "\t".join([name,",".join(currlocus.name for currlocus in currtrans.loci),currtrans.amino,currtrans.anticodon])
         if trnabed is not None:
-            transcriptrange = GenomeRange("genome", name, margin, margin + len(currtrans.getmatureseq()), strand = "+", name = name)
+            transcriptrange = GenomeRange("genome", name, margin, margin + len(matureseq), strand = "+", name = name)
             print >>trnabed, transcriptrange.bedstring()
         if args["locibed"]:
             itemrgb = "0"
@@ -197,9 +196,10 @@ if __name__ == "__main__":
                        help='Output stockholm format alignment of mature tRNAs')
     parser.add_argument('--gtrnafa', 
                        help='fasta sequence tRNAs from tRNAscan-SE database')
-    parser.add_argument('--mitomode', action="store_true", default=False,
-                       help='Use mitochondrial models for alignment')
-    maturetrnafa
+    parser.add_argument('--cmmodel', 
+                       help='covariance model to use')
+    parser.add_argument('--prokmode', action="store_true", default=False,
+                       help='skip adding CCA to mature tRNAs')
     
     args = vars(parser.parse_args())
     main(args)    
