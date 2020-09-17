@@ -651,7 +651,7 @@ def readgtf(filename, orgdb="genome", seqfile= None, filterpsuedo = False, repla
             continue
         fields = currline.rstrip().split("\t")
         if len(fields) > 2:
-            biotype = None
+            biotype = "Unknown"
             featname = None
             genename = None
             #print >>sys.stderr, len(fields)
@@ -1105,6 +1105,9 @@ class fastaindex:
             yield GenomeRange(dbname,curr,0,self.chromsize[curr],name=curr, strand = "+")
     def getseek(self, currchrom,loc):
         #print >>sys.stderr, (self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
+        if currchrom not in self.chromsize:
+            print >>sys.stderr, "sequence "+currchrom+" not found in index for "+self.fafile
+            sys.exit(1)
         return self.chromoffset[currchrom] + loc + int(loc/(self.seqlinesize[currchrom]))*(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
     def getfullseqs(self, names):
         genomefile = open(self.fafile, "r")

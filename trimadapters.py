@@ -43,14 +43,72 @@ def runrscript(*script):
         #sys.exit()
     return retcode
     
-def subprocesspool(args):
+def subprocesspool(argnames):
+    samplename = argnames[0]
+    args = argnames[1]
     process = subprocess.Popen(*args[0], **args[1])
     process.wait()
-    return process
+    return samplename, process
 def compressargs( *args, **kwargs):
     return tuple([args, kwargs])
     
+
+def readseqprep(processoutput):
+    seqprepcounts = dict()
+    output = processoutput.communicate()
+    errinfo = output[1]
+    if processoutput.returncode != 0:
+        print >>sys.stderr, "seqprep failed"
+        print >>sys.stderr, errinfo
     
+    errinfo
+    for line in errinfo.split("\n"):
+    
+        
+        totalmatch = rereadtotal.match(line)
+        mergematch = rereadmerge.match(line)
+        discardmatch = rereaddiscard.match(line)
+        if totalmatch:
+            totalreads = int(totalmatch.group(1).replace(",",""))
+        elif mergematch: 
+            merged = int(mergematch.group(1).replace(",",""))
+        elif discardmatch:
+            discard = int(discardmatch.group(1).replace(",",""))
+    
+    seqprepcounts["merged"] = merged
+    seqprepcounts["unmerged"] = totalreads - (merged + discard)
+    seqprepcounts["discarded"] = discard
+    return seqprepcounts, errinfo
+    
+def readcutadapt(processoutput):
+    cutadaptcounts = dict()
+    output = cutadaptruns[currsample].communicate()
+    errinfo = output[1]
+    if processoutput.returncode != 0:
+        print >>sys.stderr, "seqprep failed"
+        print >>sys.stderr, errinfo
+    print >>sys.stderr, errinfo
+    
+    for line in errinfo.split("\n"):
+        totalmatch = recutadapttotal.match(line)
+        trimmatch = recutadapttrimmed.match(line) 
+        discardmatch = recutadaptshort.match(line) 
+        writtenmatch = recutadaptwritten.match(line) 
+        #trimmed = None
+    
+        if totalmatch:
+            totalreads = int(totalmatch.group(1).replace(",",""))
+        elif trimmatch: 
+            trimmed = int(trimmatch.group(1).replace(",",""))
+        elif discardmatch:
+            discard = int(discardmatch.group(1).replace(",",""))
+        elif writtenmatch:
+            written = int(writtenmatch.group(1).replace(",",""))
+           
+    cutadaptcounts["trimmed"] = trimmed
+    cutadaptcounts["untrimmed"] = totalreads - (trimmed + discard)
+    cutadaptcounts["discarded"] = discard
+    return cutadaptcounts, errinfo
 scriptdir = os.path.dirname(os.path.realpath(sys.argv[0]))+"/"
 
 
@@ -137,8 +195,8 @@ totalreads = None
 merged = None
 discard = None
 samplenum = 1
-seqprepcounts = defaultdict(lambda: defaultdict(int))
-cutadaptcounts = defaultdict(lambda: defaultdict(int))
+seqprepcounts = dict()
+cutadaptcounts = dict()
 allsamples = set()
 
 minsize = 15
@@ -185,14 +243,19 @@ for currsample in sampleorder:
         
         
 if not singleendmode:
-    results = trimpool.map(subprocesspool, list(seqprepruns[currsample] for currsample in sampleorder))
-    for i, currsample in enumerate(sampleorder):
-        seqprepruns[currsample] = results[i]
+    results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
+    for samplename, spoutput in results:
+        print >>sys.stderr, samplename +" merged"
+        #print >>sys.stderr, spoutput
+        seqprepcounts[currsample], errinfo = readseqprep(spoutput)
+        prepout += errinfo
 else:
-    results = trimpool.map(subprocesspool, list(cutadaptruns[currsample] for currsample in sampleorder))
-    for i, currsample in enumerate(sampleorder):
-        cutadaptruns[currsample] = results[i]
-            
+    results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, cutadaptruns[currsample]]) for currsample in sampleorder))
+    for samplename, caoutput in results:
+        print >>sys.stderr, samplename +" trimmed"
+        cutadaptcounts[currsample], errinfo = readcutadapt(caoutput)
+        prepout += errinfo
+''' 
 for currsample in sampleorder:
     if not singleendmode:
         output = seqprepruns[currsample].communicate()
@@ -245,7 +308,7 @@ for currsample in sampleorder:
         cutadaptcounts[currsample]["trimmed"] = trimmed
         cutadaptcounts[currsample]["untrimmed"] = totalreads - (trimmed + discard)
         cutadaptcounts[currsample]["discarded"] = discard
-        
+'''
         
 #print >>sys.stderr, cutadaptcounts
 

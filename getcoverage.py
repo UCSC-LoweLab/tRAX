@@ -130,7 +130,7 @@ def gettnanums(trnaalign, margin = 0, orgtype = "euk"):
     positions = eukpositions 
     if orgtype == "arch":
     	positions = archpositions
-    elif orgtype = "mito"
+    elif orgtype == "mito":
         positions = eukpositions
     for i in range(margin):
         trnanum.append('head'+str(margin - i))

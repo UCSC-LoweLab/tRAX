@@ -62,6 +62,10 @@ scanfile = args.trnascanfile
 genomefile = args.genomefile
 gtrnafafile = args.gtrnafafile
 namemapfile = args.namemapfile
+
+if namemapfile is None:
+    print >>sys.stderr, "Name map file currently needed for tRNA database creation"
+    sys.exit(1)
 orgmode = args.orgmode
 addseqs = args.addseqs
 dbdirectory = os.path.dirname(dbname) + "/"
@@ -108,7 +112,7 @@ elif orgmode == "arch":
 elif orgmode == "mito":
     maturemodel =  scriptdir+'TRNAMatureMitoinf.cm'
     trnamodel =  scriptdir+'TRNAinf.cm'
-    prokmode = True
+    prokmode = False
 
 
 getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=dbdirectory+dbname+"-trnaalign.stk",locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)

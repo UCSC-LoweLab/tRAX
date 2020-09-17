@@ -14,12 +14,11 @@ import time
 MAXMAPS = 100
 
 
-numcores = 4
 
 
 defaultminnontrnasize = 20
 
-def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXMAPS,program = 'bowtie2', logfile = None, mapfile = None, expname = None, samplename = None, minnontrnasize = defaultminnontrnasize):
+def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXMAPS,program = 'bowtie2', logfile = None, mapfile = None, expname = None, samplename = None, minnontrnasize = defaultminnontrnasize, numcores = 1):
     '''
     I think the quals are irrelevant due to the RT step, and N should be scored as only slightly better than a mismatch
     this does both
