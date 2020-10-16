@@ -167,7 +167,12 @@ displaygenes = c(displaygenes, livergenes, musclegenes)
 displaygenes = c()
 currsampledata$name = rownames(currsampledata)
 displayfeats = ifelse(currsampledata$genename %in% displaygenes, as.character(currsampledata$genename), "")
-#print("**")
+
+pvalcutoff = sort(currsampledata$currprob)[10]
+
+displayfeats = ifelse(abs(currsampledata$currlogval) > 1.5 & currsampledata$currprob < pvalcutoff, as.character(currsampledata$genename), "")
+
+#print("**") 
 #print(rownames(currsampledata))
 #print(head(displayfeats))
 

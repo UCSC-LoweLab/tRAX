@@ -11,6 +11,8 @@ from distutils.spawn import find_executable
 
 from collections import defaultdict
 
+allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','iMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
+
 def readmultifasta(fafile):
     #print chrom+":"+ chromstart+"-"+ chromendre
     if fafile == "stdin":
@@ -421,12 +423,13 @@ class extraseqfile:
         
             
 class samplefile:
-    def __init__(self, samplefilename):
+    def __init__(self, samplefilename, bamdir = "./"):
         try:
             samplefile = open(samplefilename)
             samplelist = list()
             samplefiles = dict()
             replicatename = dict()
+            
             
             replicatelist = list()
             for i, line in enumerate(samplefile):
@@ -442,6 +445,9 @@ class samplefile:
             
             #bamlist = list(curr + "_sort.bam" for curr in samplefiles.iterkeys())
             samplenames = list(curr  for curr in samplefiles.iterkeys())
+            if bamdir is None:
+                bamdir = "./"
+            self.bamdir = bamdir
             self.samplelist = samplelist
             self.samplefiles = samplefiles
             self.replicatename = replicatename
@@ -456,7 +462,7 @@ class samplefile:
     def getbamlist(self):
         return list(curr+ ".bam" for curr in self.samplelist)
     def getbam(self, sample):
-        return sample+ ".bam"
+        return self.bamdir + "/" + sample + ".bam" 
     def getfastq(self, sample):
         return self.samplefiles[sample]
     def getreplicatename(self, sample):

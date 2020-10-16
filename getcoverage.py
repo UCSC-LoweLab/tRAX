@@ -591,7 +591,7 @@ def compressargs( *args, **kwargs):
 def testmain(**argdict):
     #print >>sys.stderr, argdict
     argdict = defaultdict(lambda: None, argdict)
-    if "edgemargin" not in  argdict:
+    if "edgemargin" not in  argdict:                    
         edgemargin = 0
     else:
         edgemargin = int(argdict["edgemargin"])
@@ -601,8 +601,10 @@ def testmain(**argdict):
     else:
         mincoverage = int(argdict["mincoverage"])  
     
-        
-    sampledata = samplefile(argdict["samplefile"])
+    if "bamdir" not in argdict:
+        bamdir = "./"
+    bamdir = argdict["bamdir"]
+    sampledata = samplefile(argdict["samplefile"], bamdir = bamdir)
     trnafasta = argdict["trnafasta"]
     trnaseqs = fastadict(trnafasta)
     for currname in trnaseqs.keys():
@@ -620,6 +622,8 @@ def testmain(**argdict):
     trnastk = list(readrnastk(open(argdict["stkfile"], "r")))[0]
     bedfile = argdict["bedfile"]
     locibed = argdict["locibed"]
+    
+    
     orgtype = "euk"
     if "orgtype" in argdict:
         orgtype = argdict["orgtype"]
@@ -660,9 +664,9 @@ def testmain(**argdict):
         locitrnas = list()
         basetrnas = list()
         for currfile in bedfile:
-            basetrnas.extend(list(currbed for currbed in readbed(currfile)))    
+            basetrnas.extend(list(currbed for currbed in readbed(currfile)))
         for currfile in locibed:
-            locitrnas.extend(list(currbed for currbed in readbed(currfile)))   
+            locitrnas.extend(list(currbed for currbed in readbed(currfile)))
     except IOError as e:
         print >>sys.stderr, e
         sys.exit()

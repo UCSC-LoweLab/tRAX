@@ -24,7 +24,7 @@ countsmelt = melt(temp, id.vars = c('seq'))
 
 
 countsmelt = within(countsmelt, seq <- factor(seq, 
-    rev(rownames(selectcounts))))
+    rownames(selectcounts)))
 
 #head(countsmelt)
 sampletotals = aggregate(countsmelt$value, list(countsmelt$variable), sum)

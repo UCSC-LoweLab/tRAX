@@ -410,7 +410,12 @@ def testmain(**argdict):
         threadmode = False
     otherseqs = extraseqfile(argdict["otherseqs"])
     typefile = None
-    sampledata = samplefile(argdict["samplefile"])
+    
+    if "bamdir" not in argdict:
+        bamdir = "./"
+    bamdir = argdict["bamdir"]
+    sampledata = samplefile(argdict["samplefile"], bamdir = bamdir)
+    
     bedfiles = list() 
     if "trnauniquecounts" in argdict:
         trnauniquefilename = argdict["trnauniquecounts"]

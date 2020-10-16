@@ -26,7 +26,7 @@ def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXM
     
      --ignore-quals --np 5
      Very sensitive is necessary due to mismatch caused by modified base misreads
-    '''
+    ''' 
 
     bowtiecommand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
 
@@ -123,14 +123,17 @@ def testmain(**argdict):
     bowtiedb = argdict["bowtiedb"]
     lazycreate = argdict["lazy"]
     minnontrnasize = argdict["minnontrnasize"]
+    bamdir = argdict["bamdir"]
+    if bamdir is None:
+        bamdir = "./"
     
     if "cores" in argdict:
         cores = int(argdict["cores"])
     else:
         cores = min(8,cpu_count())
     #sys.exit()
-    print >>sys.stderr,"cores: "+str(cores) 
-    workingdir = './'
+    print >>sys.stderr,"cores: "+str(cores)
+    workingdir = bamdir
     #samplefile = open(args.samplefile)
     
     samples = sampledata.getsamples()

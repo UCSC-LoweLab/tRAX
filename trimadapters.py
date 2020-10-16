@@ -61,7 +61,7 @@ def readseqprep(processoutput):
         print >>sys.stderr, "seqprep failed"
         print >>sys.stderr, errinfo
     
-    errinfo
+    #errinfo
     for line in errinfo.split("\n"):
     
         
@@ -82,12 +82,12 @@ def readseqprep(processoutput):
     
 def readcutadapt(processoutput):
     cutadaptcounts = dict()
-    output = cutadaptruns[currsample].communicate()
+    output = processoutput.communicate()
     errinfo = output[1]
     if processoutput.returncode != 0:
-        print >>sys.stderr, "seqprep failed"
+        print >>sys.stderr, "cutadapt failed"
         print >>sys.stderr, errinfo
-    print >>sys.stderr, errinfo
+    #print >>sys.stderr, errinfo
     
     for line in errinfo.split("\n"):
         totalmatch = recutadapttotal.match(line)
@@ -241,20 +241,25 @@ for currsample in sampleorder:
         cutadaptruns[currsample] = None
         cutadaptruns[currsample] = compressargs(cutadaptcommand, shell = True, stderr = subprocess.PIPE)
         
-        
+
+
 if not singleendmode:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
     for samplename, spoutput in results:
         print >>sys.stderr, samplename +" merged"
         #print >>sys.stderr, spoutput
-        seqprepcounts[currsample], errinfo = readseqprep(spoutput)
+        seqprepcounts[samplename], errinfo = readseqprep(spoutput)
         prepout += errinfo
 else:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, cutadaptruns[currsample]]) for currsample in sampleorder))
     for samplename, caoutput in results:
+        
         print >>sys.stderr, samplename +" trimmed"
-        cutadaptcounts[currsample], errinfo = readcutadapt(caoutput)
+        cutadaptcounts[samplename], errinfo = readcutadapt(caoutput)
         prepout += errinfo
+        
+#print >>sys.stderr,  cutadaptcounts.keys()
+#sys.exit()
 ''' 
 for currsample in sampleorder:
     if not singleendmode:

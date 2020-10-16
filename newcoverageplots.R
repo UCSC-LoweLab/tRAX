@@ -10,6 +10,10 @@ library(reshape2)
 library(scales)
 library(getopt)
 
+
+
+allaminos = c('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','iMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet') 
+
 expand.delimited <- function(x, col1=1, col2=2, sep=",") {
   rnum <- 1
   expand_row <- function(y) {
@@ -458,7 +462,11 @@ coveragemeltagg$Sample <- factor(coveragemeltagg$Sample,levels = unique(sampleta
 coveragemelt <- coverageprep(coveragemeltagg, samples, trnatable)
 
 acceptorType = trnatable[match(coveragemelt$Feature, trnatable[,1]),3]
-acceptorType <- factor(acceptorType, levels = sort(unique(acceptorType)))
+
+allaminos
+
+#acceptorType <- factor(acceptorType, levels = sort(unique(acceptorType)))
+acceptorType <- factor(acceptorType, levels = allaminos)
 sortacceptor <- acceptorType[order(coveragemelt$variable, coveragemelt$Sample,-as.numeric(coveragemelt$Feature))]
 
 

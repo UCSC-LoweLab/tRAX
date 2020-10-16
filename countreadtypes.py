@@ -375,35 +375,42 @@ def printtypefile(countfile,samples, sampledata,allcounts,trnalist, trnaloci, be
     
 def printrealcounts(countfile,samples, sampledata,allcounts,trnalist, trnaloci, bedtypes, emblbiotypes,extraseqtypes = set()):
 
-
+    biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         
+    biotypelast = ['Mt_rRNA','Mt_tRNA','rRNA']
+    otherbiotypes = list(set(emblbiotypes) - (set(biotypefirst) | set(biotypelast)))
+    biotypeorder = biotypefirst + otherbiotypes + biotypelast
         
     replicates = list(sampledata.allreplicates())
     print >>countfile, "\t".join(samples)
-    for currbed in trnalist:     
-        print  >>countfile, "tRNA\t"+"\t".join(str(allcounts[currsample].trnacounts[currbed]) for currsample in samples)
+
+
+    #print >>sys.stderr, allcounts[sampledata.getrepsamples(replicates[0])[0]].embltypecounts 
+
+
+    #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
+
+    
+    print  >>countfile, "other"+"\t"+"\t".join(str(allcounts[currsample].otherreads) for currsample in samples)
+    for currbed in bedtypes:
+        print  >>countfile, os.path.basename(currbed)+"\t"+"\t".join(str(allcounts[currsample].bedtypecounts[currbed]) for currsample in samples)
+    for currname in extraseqtypes:
+         print >>countfile, currname+"_seq\t"+"\t".join(str(allcounts[currsample].extraseqcounts[currname]) for currsample in samples)
+
+    for currbiotype in reversed(biotypeorder):
+        print  >>countfile, currbiotype+"\t"+"\t".join(str(allcounts[currsample].embltypecounts[currbiotype]) for currsample in samples)
         
     for currbed in trnaloci:
  
         print  >>countfile, "pretRNA\t"+"\t".join(str(allcounts[currsample].trnalocuscounts[currbed]) for currsample in samples)
-    #print >>sys.stderr, allcounts[sampledata.getrepsamples(replicates[0])[0]].embltypecounts 
-    for currbiotype in emblbiotypes:
-        print  >>countfile, currbiotype+"\t"+"\t".join(str(allcounts[currsample].embltypecounts[currbiotype]) for currsample in samples)
+    for currbed in trnalist:     
+        print  >>countfile, "tRNA\t"+"\t".join(str(allcounts[currsample].trnacounts[currbed]) for currsample in samples)
         
-    for currbed in bedtypes:
-        print  >>countfile, os.path.basename(currbed)+"\t"+"\t".join(str(allcounts[currsample].bedtypecounts[currbed]) for currsample in samples)
-    #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
-    for currname in extraseqtypes:
-         print >>countfile, currname+"_seq\t"+"\t".join(str(allcounts[currsample].extraseqcounts[currname]) for currsample in samples)
-
-    
-    print  >>countfile, "other"+"\t"+"\t".join(str(allcounts[currsample].otherreads) for currsample in samples)
-
 
 def printaminocounts(trnaaminofilename, sampledata,allcounts, sizefactor):
     #print >>sys.stderr, trnaaminocounts
     replicates = list(sampledata.allreplicates())
     trnaaminofile = open(trnaaminofilename, "w")
-    aminos = set(itertools.chain.from_iterable(allcounts[currsample].aminos for currsample in sampledata.getsamples()))
+    aminos = allaminos
     #print >>sys.stderr, aminos
     print  >>trnaaminofile, "\t".join(replicates)
     for curramino in aminos:
@@ -458,8 +465,10 @@ def testmain(**argdict):
     trnaanticodonfile = argdict["trnaanticodonfile"]
     otherseqs = extraseqfile(argdict["otherseqs"])
     #print >>sys.stderr, argdict["otherseqs"]
-    
-    sampledata = samplefile(argdict["samplefile"])
+    if "bamdir" not in argdict:
+        bamdir = "./"
+    bamdir = argdict["bamdir"]
+    sampledata = samplefile(argdict["samplefile"], bamdir = bamdir)
     cores = argdict["cores"]
     threadmode = True
     if cores == 1:
