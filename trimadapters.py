@@ -223,7 +223,7 @@ for currsample in sampleorder:
         #seqprepcommmand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
         seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_merge.fastq.gz'  
         outputfiles.append(currsample+'_merge.fastq.gz')
-        #print >>sys.stderr, bowtiecommand
+        print >>sys.stderr, seqprepcommmand
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         seqprepruns[currsample] = None

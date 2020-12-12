@@ -148,6 +148,8 @@ class expdatabase:
         
         self.trnaaminofile=expname+"/"+expname+"-aminocounts.txt"
         self.trnaaminoplot=expname+"/"+expname+"-aminocounts.pdf"
+        self.trnaaminorealplot=expname+"/"+expname+"-aminorealcounts.pdf"
+        
         
         self.trnaanticodonfile=expname+"/"+expname+"-anticodoncounts.txt"
         
@@ -194,8 +196,8 @@ def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  i
         countreadtypes.testmain(sizefactors=expinfo.sizefactors,combinereps= True , bamdir = bamdir, otherseqs = trnainfo.otherseqs, samplefile=samplefile,maturetrnas=[trnainfo.maturetrnas],trnatable=trnainfo.trnatable,trnaaminofile=expinfo.trnaaminofile,trnaanticodonfile = expinfo.trnaanticodonfile,ensemblgtf=ensgtf,trnaloci=[trnainfo.locifile],countfile=expinfo.genetypecounts,realcountfile=expinfo.genetyperealcounts,bedfile= bedfiles,readlengthfile =  expinfo.trnalengthfile ,countfrags=countfrags, bamnofeature = bamnofeature, cores = cores)
         #Plot reads by gene type and tRNAs by amino acid
         runrscript(scriptdir+"/featuretypes.R",expinfo.genetypecounts,expinfo.genetypeplot)
-        #runrscript(scriptdir+"/featuretypes.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
-        runrscript(scriptdir+"/featuretypesreal.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
+        runrscript(scriptdir+"/featuretypes.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
+        runrscript(scriptdir+"/featuretypesreal.R",expinfo.trnaaminofile,expinfo.trnaaminorealplot)
         
         runrscript(scriptdir+"/featuretypesreal.R",expinfo.genetyperealcounts,expinfo.genetyperealplot)
 
@@ -204,8 +206,8 @@ def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  i
         countreadtypes.testmain(combinereps= True ,samplefile=samplefile,maturetrnas=[trnainfo.maturetrnas],otherseqs = expinfo.otherseqs, bamdir = bamdir, trnatable=trnainfo.trnatable,trnaaminofile=expinfo.trnaaminofile,trnaanticodonfile = expinfo.trnaanticodonfile,ensemblgtf=ensgtf,trnaloci=[trnainfo.locifile],countfile=expinfo.genetypecounts,realcountfile=expinfo.genetyperealcounts,bedfile= bedfiles,readlengthfile =  expinfo.trnalengthfile,countfrags=countfrags, cores = cores)
         #Plot reads by gene type and tRNAs by amino acid
         runrscript(scriptdir+"/featuretypes.R",expinfo.genetypecounts,expinfo.genetypeplot)
-        #runrscript(scriptdir+"/featuretypes.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
-        runrscript(scriptdir+"/featuretypesreal.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
+        runrscript(scriptdir+"/featuretypes.R",expinfo.trnaaminofile,expinfo.trnaaminoplot)
+        runrscript(scriptdir+"/featuretypesreal.R",expinfo.trnaaminofile,expinfo.trnaaminorealplot)
         runrscript(scriptdir+"/featuretypesreal.R",expinfo.genetyperealcounts,expinfo.genetyperealplot)
 
         runrscript(scriptdir+"/readlengthhistogram.R",expinfo.trnalengthfile,expinfo.trnalengthplot)

@@ -297,6 +297,39 @@ def printtypefile(countfile,samples, sampledata,allcounts,trnalist, trnaloci, be
     if combinereps:
         replicates = list(sampledata.allreplicates())
         print >>countfile, "\t".join(replicates)
+        #print >>sys.stderr, allcounts[sampledata.getrepsamples(replicates[0])[0]].embltypecounts 
+
+        #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
+        print  >>countfile, "other"+"\t"+"\t".join(str(sum(allcounts[currsample].otherreads/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+        for currbed in bedtypes:
+            print  >>countfile, os.path.basename(currbed).split(".")[0]+"\t"+"\t".join(str(sum(allcounts[currsample].bedtypecounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+        #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
+        #sys.exit()
+        
+        
+        for currname in extraseqtypes:
+            #print >>sys.stderr, currname
+            print >>countfile, currname+"_seq\t"+"\t".join(str(sum(allcounts[currsample].extraseqcounts[currname]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+ 
+        biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         
+        biotypelast = ['Mt_rRNA','Mt_tRNA','rRNA']
+        otherbiotypes = list(set(emblbiotypes) - (set(biotypefirst) | set(biotypelast)))
+        biotypeorder = biotypefirst + otherbiotypes + biotypelast
+        #print >>sys.stderr, biotypeorder
+
+        for currbiotype in biotypeorder:
+            #print  >>countfile, currbiotype+"\t"+"\t".join(str(sumsamples(emblcounts,sampledata,currrep, currbiotype, sizefactors = sizefactor)) for currrep in replicates)
+            print  >>countfile, currbiotype+"\t"+"\t".join(str(sum(allcounts[currsample].embltypecounts[currbiotype]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+               
+
+        for currbed in trnaloci:
+            if countfrags:
+                print  >>countfile, "pretRNA_full\t"+"\t".join(str(sumsamples(fulltrnalocuscounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
+                print  >>countfile, "pretRNA_partial\t"+"\t".join(str(sumsamples(partialtrnalocuscounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
+                print  >>countfile, "pretRNA_trailer\t"+"\t".join(str(sumsamples(trnalocustrailercounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
+            else:
+                print  >>countfile, "pretRNA\t"+"\t".join(str(sum(allcounts[currsample].trnalocuscounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+
         for currbed in trnalist:
             
             if countfrags:
@@ -310,36 +343,33 @@ def printtypefile(countfile,samples, sampledata,allcounts,trnalist, trnaloci, be
                 print  >>countfile, "tRNA\t"+"\t".join(str(sum(allcounts[currsample].trnacounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
                 #print  >>countfile, "tRNA\t"+"\t".join(str(sumsamples(allcounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
             
-        for currbed in trnaloci:
-            if countfrags:
-                print  >>countfile, "pretRNA_full\t"+"\t".join(str(sumsamples(fulltrnalocuscounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
-                print  >>countfile, "pretRNA_partial\t"+"\t".join(str(sumsamples(partialtrnalocuscounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
-                print  >>countfile, "pretRNA_trailer\t"+"\t".join(str(sumsamples(trnalocustrailercounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
-            else:
-                print  >>countfile, "pretRNA\t"+"\t".join(str(sum(allcounts[currsample].trnalocuscounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
-        #print >>sys.stderr, allcounts[sampledata.getrepsamples(replicates[0])[0]].embltypecounts 
-        biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         
-        biotypelast = ['Mt_rRNA','Mt_tRNA','rRNA']
-        otherbiotypes = list(set(emblbiotypes) - (set(biotypefirst) | set(biotypelast)))
-        biotypeorder = biotypefirst + otherbiotypes + biotypelast
-        #print >>sys.stderr, biotypeorder
-
-        for currbiotype in biotypeorder:
-            #print  >>countfile, currbiotype+"\t"+"\t".join(str(sumsamples(emblcounts,sampledata,currrep, currbiotype, sizefactors = sizefactor)) for currrep in replicates)
-            print  >>countfile, currbiotype+"\t"+"\t".join(str(sum(allcounts[currsample].embltypecounts[currbiotype]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
-            
-        for currname in extraseqtypes:
-            #print >>sys.stderr, currname
-            print >>countfile, currname+"_seq\t"+"\t".join(str(sum(allcounts[currsample].extraseqcounts[currname]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
-        #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
-        print  >>countfile, "other"+"\t"+"\t".join(str(sum(allcounts[currsample].otherreads/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
-        for currbed in bedtypes:
-            print  >>countfile, os.path.basename(currbed)+"\t"+"\t".join(str(sum(allcounts[currsample].bedtypecounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
-        #print  >>countfile, "other"+"\t"+"\t".join(str(sumsamples(othercounts,sampledata,currrep, sizefactors = sizefactor)) for currrep in replicates)
-        #sys.exit()
+        
     else:
         print  >>countfile, "\t".join(samples)
         
+
+
+
+
+        print  >>countfile, "other"+"\t"+"\t".join(str(othercounts[currsample]/sizefactor[currsample]) for currsample in samples)
+        
+        for currbed in bedlist:
+            print  >>countfile, os.path.basename(currbed).split(".")[0]+"\t"+"\t".join(str(counts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
+        biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         
+        biotypelast = ['Mt_rRNA','Mt_tRNA','rRNA']
+        otherbiotypes = list(set(sampledata.emblbiotypes) - (set(biotypefirst) | set(biotypelast)))
+        biotypeorder = biotypefirst + otherbiotypes + biotypelast
+        #print >>sys.stderr, biotypeorder
+        #print >>sys.stderr, "****"
+        for currbiotype in biotypeorder:
+            print  >>countfile, currbiotype+"\t"+"\t".join(str(emblcounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
+        for currbed in locilist:
+            if countfrags:
+                print  >>countfile, "pretRNA_full\t"+"\t".join(str(fulltrnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
+                print  >>countfile, "pretRNA_partial\t"+"\t".join(str(partialtrnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
+                print  >>countfile, "pretRNA_trailer\t"+"\t".join(str(trnalocustrailercounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
+            else:
+                print  >>countfile, "pretRNA\t"+"\t".join(str(trnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
         for currbed in trnalist:
             
             if countfrags:
@@ -353,26 +383,6 @@ def printtypefile(countfile,samples, sampledata,allcounts,trnalist, trnaloci, be
                 
             else:
                 print  >>countfile, "tRNA\t"+"\t".join(str(trnacounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-        for currbed in locilist:
-            if countfrags:
-                print  >>countfile, "pretRNA_full\t"+"\t".join(str(fulltrnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-                print  >>countfile, "pretRNA_partial\t"+"\t".join(str(partialtrnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-                print  >>countfile, "pretRNA_trailer\t"+"\t".join(str(trnalocustrailercounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-            else:
-                print  >>countfile, "pretRNA\t"+"\t".join(str(trnalocuscounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-        biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         
-        biotypelast = ['Mt_rRNA','Mt_tRNA','rRNA']
-        otherbiotypes = list(set(sampledata.emblbiotypes) - (set(biotypefirst) | set(biotypelast)))
-        biotypeorder = biotypefirst + otherbiotypes + biotypelast
-        print >>sys.stderr, biotypeorder
-        print >>sys.stderr, "****"
-        for currbiotype in biotypeorder:
-            print  >>countfile, currbiotype+"\t"+"\t".join(str(emblcounts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-        for currbed in bedlist:
-            print  >>countfile, os.path.basename(currbed)+"\t"+"\t".join(str(counts[currsample][currbed]/sizefactor[currsample]) for currsample in samples)
-        print  >>countfile, "other"+"\t"+"\t".join(str(othercounts[currsample]/sizefactor[currsample]) for currsample in samples)
-
-    
 def printrealcounts(countfile,samples, sampledata,allcounts,trnalist, trnaloci, bedtypes, emblbiotypes,extraseqtypes = set()):
 
     biotypefirst = ['snoRNA','snRNA','scaRNA','sRNA','miRNA']         

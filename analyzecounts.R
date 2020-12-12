@@ -122,6 +122,13 @@ resloglist = lapply(compareresults, function(currresult){colgetlogname(currresul
 resavglist = lapply(compareresults, function(currresult){colgetlogname(currresult[[2]],currresult[[1]])})                                
 
 
+#print(compareresults)
+#print(length(dispersions(cds)))
+#print(nrow(readcounts))
+
+#print(cds)
+write.table(cbind(rownames(readcounts),dispersions(cds)),file=paste(experimentname,"/",experimentname,"-dispersions.txt", sep = ""), quote=FALSE,row.names=FALSE,col.names=FALSE)
+
 
 
 dds = cds
@@ -252,6 +259,11 @@ medcounts[[samplenames[i]]] <- normalizedrnas[,cols]
 medcountmat <- do.call("cbind",medcounts)
 
 colnames(medcountmat) <- names(medcounts)
+
+
+write.table(medcountmat,paste(experimentname,"/",experimentname,"-medians.txt", sep = ""),quote=FALSE)
+
+
 #print(head(medcountmat))
 medcountmat = as.matrix(medcountmat)
 #print(head(medcountmat["Snora35",]))
