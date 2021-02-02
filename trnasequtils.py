@@ -1034,7 +1034,6 @@ def getnamedict(genelist):
         
         
 def getseqs(fafile,rangedict, faindex = None):
-    #print >>sys.stderr, rangedict
     if faindex is not None:
         try:
             faifile = fastaindex(fafile, faindex)
@@ -1060,8 +1059,6 @@ def getseqs(fafile,rangedict, faindex = None):
                     
                     chromstart = location.start
                     chromend = location.end
-                    if location.dbname == 'eschColi_K12':
-                        pass
                         #print >>sys.stderr, genomefile
                         #print >>sys.stderr, currseq+":"+str(chromstart)+"-"+str(chromend)+":"+str(currloc)
                     if currloc <= chromstart <= currloc + len(line) and currloc <= chromend <= currloc + len(line):

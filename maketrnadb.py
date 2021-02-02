@@ -113,6 +113,11 @@ elif orgmode == "mito":
     maturemodel =  scriptdir+'TRNAMatureMitoinf.cm'
     trnamodel =  scriptdir+'TRNAinf.cm'
     prokmode = False
+elif orgmode == "bact":
+    maturemodel =  scriptdir+'trnamature-bact.cm'
+    trnamodel =  scriptdir+'TRNAinf-bact.cm'
+    prokmode = True
+    
 
 
 getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=dbdirectory+dbname+"-trnaalign.stk",locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)

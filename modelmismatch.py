@@ -50,6 +50,7 @@ from scipy.spatial.distance import euclidean
 
 
 
+~/pythonsource/TRAX/modelmismatch.py --covfile=miseqcond/miseqcond-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=miseqsamples.txt  --runname=miseqsamples
 
 '''
 gapchars = set("-._~")

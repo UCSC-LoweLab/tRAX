@@ -20,9 +20,9 @@ function db_builder() {
      FASTA=true
  elif test "${1}" = "mm10"
  then
-    GTF_URL="ftp://ftp.ensembl.org/pub/release-97/gtf/mus_musculus/Mus_musculus.GRCm38.97.gtf.gz"
+    GTF_URL="ftp://ftp.ensembl.org/pub/release-102/gtf/mus_musculus/Mus_musculus.GRCm38.102.gtf.gz"
     gtRNAdb_URL="http://gtrnadb.ucsc.edu/genomes/eukaryota/Mmusc10/mm10-tRNAs.tar.gz"
-    gtRNAdb_OUT="mm10-tRNAs-detailed.out"
+    gtRNAdb_OUT="mm10-tRNAs-confidence-set.out"
     gtRNAdb_NAME="mm10-tRNAs_name_map.txt"
     GENOME_URL="https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/mm10.2bit"
     FASTA=false
@@ -83,4 +83,3 @@ function db_builder() {
 }
 
 db_builder ${1}
-

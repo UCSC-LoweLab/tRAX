@@ -677,7 +677,7 @@ def testmain(**argdict):
 
     maxoffset = 10
     samplecoverages = dict()
-    threadmode = False
+    #threadmode = False
     trackargs = list()
     lociargs = list()
     coveragepool = Pool(processes = cores)
