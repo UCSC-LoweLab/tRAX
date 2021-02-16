@@ -41,7 +41,8 @@ parser.add_argument('--namemapfile',
                    help='Name mapping from gtRNAdb')
 parser.add_argument('--orgmode',
                    help='organism mode (euk/arch/bact/mito, default euk)')
-
+parser.add_argument('--forcecca', action="store_true", default=False,
+                   help='force the addition of a CCA tail')
 
 def shellcall(shellcommand,failquit = False):
     retcode = subprocess.call(shellcommand, shell=True)
@@ -62,7 +63,7 @@ scanfile = args.trnascanfile
 genomefile = args.genomefile
 gtrnafafile = args.gtrnafafile
 namemapfile = args.namemapfile
-
+forcecca = args.forcecca
 if namemapfile is None:
     print >>sys.stderr, "Name map file currently needed for tRNA database creation"
     sys.exit(1)
@@ -118,7 +119,8 @@ elif orgmode == "bact":
     trnamodel =  scriptdir+'TRNAinf-bact.cm'
     prokmode = True
     
-
+if forcecca:
+    prokmode = False
 
 getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=dbdirectory+dbname+"-trnaalign.stk",locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)
 aligntrnalocus.main(genomefile=genomefile,stkfile=dbdirectory+dbname+"-trnaloci.stk",trnaloci=dbdirectory+dbname+"-trnaloci.bed", cmmodel = trnamodel)
@@ -176,6 +178,7 @@ print >>dbinfo, "creation\t"+" ".join(sys.argv)
 print >>dbinfo, "genomefile\t"+str(genomefile)
 print >>dbinfo, "trnascanfile\t"+str(scanfile)
 print >>dbinfo, "orgmode\t"+str(orgmode)
+print >>dbinfo, "forcecca\t"+str(forcecca)
 print >>dbinfo, "git version\t"+str(gitversion)
 
 if addseqs:

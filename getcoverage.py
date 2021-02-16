@@ -132,6 +132,8 @@ def gettnanums(trnaalign, margin = 0, orgtype = "euk"):
     	positions = archpositions
     elif orgtype == "mito":
         positions = eukpositions
+    elif orgtype == "bact":
+        positions = archpositions  #may need to change this later
     for i in range(margin):
         trnanum.append('head'+str(margin - i))
     for i, struct in enumerate(trnaalign.consensus):

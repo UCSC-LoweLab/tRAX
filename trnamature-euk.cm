@@ -1,4 +1,4 @@
-INFERNAL1/a [1.1rc1 | June 2012]
+INFERNAL1/a [1.1.2 | July 2016]
 NAME     tRNA1415G-euk
 STATES   316
 NODES    85
@@ -8,9 +8,8 @@ ALPH     RNA
 RF       yes
 CONS     yes
 MAP      yes
-DATE     Fri Apr  3 21:35:53 2015
+DATE     Fri Feb  5 14:53:51 2021
 COM      [1] cmbuild --enone --hand -F trnamature-euk.cm MaturetRNAs.stk
-COM      [2] cmcalibrate /soe/holmes/pythonsource/trnatest/trnaseq/trnamature-euk.cm
 PBEGIN   0.05
 PEND     0.05
 WBETA    1e-07
@@ -24,10 +23,6 @@ EFFN     242.000000
 CKSUM    3525621826
 NULL     0.000  0.000  0.000  0.000 
 EFP7GF   -12.3847 0.71841
-ECMLC    0.60034    -8.35905     1.71781     1600000      508721  0.002359
-ECMGC    0.31900   -42.88208   -28.93868     1600000       34182  0.011702
-ECMLI    0.56240    -8.51949     2.11511     1600000      474955  0.002527
-ECMGI    0.33630   -38.20425   -25.02791     1600000       33614  0.011900
 CM
                                              [ ROOT    0 ]      -      - - - - -
      S     0    -1 0     1     4     0     1   105   123 -13.060 -13.267  -4.946  -0.048                 
@@ -431,7 +426,7 @@ CM
                                              [ END    84 ]      -      - - - - -
      E   315   314 3    -1     0     0     0     0     0                                                 
 //
-HMMER3/f [i1.1rc1 | June 2012]
+HMMER3/f [3.1b3 | July 2016]
 NAME  tRNA1415G-euk
 LENG  99
 MAXL  155
@@ -441,7 +436,7 @@ MM    no
 CONS  yes
 CS    yes
 MAP   yes
-DATE  Fri Apr  3 21:35:53 2015
+DATE  Fri Feb  5 14:53:51 2021
 COM   [1] cmbuild --enone --hand -F trnamature-euk.cm MaturetRNAs.stk
 NSEQ  242
 EFFN  25.623138
