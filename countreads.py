@@ -34,6 +34,7 @@ class featurecount:
         
         self.counts = defaultdict(int)
         self.trnacounts = defaultdict(int)
+        self.antitrnacount = defaultdict(int)
         self.trnawholecounts = defaultdict(int)
         self.trnafivecounts = defaultdict(int)
         self.trnathreecounts = defaultdict(int)
@@ -53,6 +54,9 @@ class featurecount:
         self.genetypes[genename] = genetype
     def addcount(self, genename):
        self.counts[genename] += 1
+    def addantitrnacount(self, genename):
+       self.antitrnacount[genename] += 1
+       
     def addlocuscount(self, genename):
        self.trnalocuscounts[genename] += 1
     def addpartiallocuscount(self, genename):
@@ -83,6 +87,8 @@ class featurecount:
             
     def getgenecount(self, genename):
        return self.counts[genename]
+    def getantitrnacount(self, genename):
+       return self.antitrnacount[genename]
     def getlocuscount(self, genename):
        return self.trnalocuscounts[genename]
     def getpartiallocuscount(self, genename):
@@ -210,15 +216,20 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
     #print >>sys.stderr, samplename+" threadA "+str(time.time())        
     for currfeat in trnalist:
         #print >>sys.stderr, samplename+":"+currfeat.name
+        
         featreads = 0
         for currread in getbam(bamfile, currfeat, singleonly = nomultimap, allowindels = allowindels):
+
             if maxmismatches is not None and curread.mismatches() > maxmismatches:
                 continue
             featreads += 1
             if not currfeat.strand == currread.strand:
+                samplecounts.addantitrnacount(currfeat.name)
                 continue
             if not currfeat.coverage(currread) > 10:
                 continue
+            if samplename == "TIGR4_pCSP_2_DM":
+                print >>sys.stderr, "***"
             curramino = trnainfo.getamino(currfeat.name)
             curranticodon = trnainfo.getanticodon(currfeat.name)
             #samplecounts.addfragcount(currfeat.name, fragtype)
@@ -253,11 +264,16 @@ def printcountfile(countfile, samples,  samplecounts, trnalist, trnaloci, featur
             continue
         if includebase:
             print >>countfile, currfeat.name+"\t"+"\t".join(str(samplecounts[currsample].gettrnacount(currfeat.name)) for currsample in samples)
+            print >>countfile, currfeat.name+"_antisense\t"+"\t".join(str(samplecounts[currsample].getantitrnacount(currfeat.name)) for currsample in samples)
+
         else:
             print >>countfile, currfeat.name+"_wholecounts\t"+"\t".join(str(samplecounts[currsample].getwholecount(currfeat.name)) for currsample in samples)
             print >>countfile, currfeat.name+"_fiveprime\t"+"\t".join(str(samplecounts[currsample].getfivecount(currfeat.name) ) for currsample in samples)
             print >>countfile, currfeat.name+"_threeprime\t"+"\t".join(str(samplecounts[currsample].getthreecount(currfeat.name)) for currsample in samples)
             print >>countfile, currfeat.name+"_other\t"+"\t".join(str(samplecounts[currsample].gettrnacount(currfeat.name) - (samplecounts[currsample].getwholecount(currfeat.name) + samplecounts[currsample].getfivecount(currfeat.name) + samplecounts[currsample].getthreecount(currfeat.name))) for currsample in samples)
+            
+
+            print >>countfile, currfeat.name+"_antisense\t"+"\t".join(str(samplecounts[currsample].getantitrnacount(currfeat.name)) for currsample in samples)
 
     for currfeat in trnaloci:
         if max(itertools.chain((samplecounts[currsample].getlocuscount(currfeat.name) for currsample in samples),[0])) < minreads:
@@ -321,6 +337,7 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
         print >>genetypeout, currfeat.name+"_fiveprime"+"\t"+"trna_fiveprime"
         print >>genetypeout, currfeat.name+"_threeprime"+"\t"+"trna_threeprime"
         print >>genetypeout, currfeat.name+"_other"+"\t"+"trna_other"
+        print >>genetypeout, currfeat.name+"_antisense"+"\t"+"trna_antisense"
         print >>genetypeout, currfeat.name+""+"\t"+"tRNA"
     
     for currfeat in embllist:

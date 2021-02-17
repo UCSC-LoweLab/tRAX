@@ -48,7 +48,7 @@ def subprocesspool(argnames):
     args = argnames[1]
     process = subprocess.Popen(*args[0], **args[1])
     process.wait()
-    return samplename, process
+    return samplename," ".join(args[0]),  process
 def compressargs( *args, **kwargs):
     return tuple([args, kwargs])
     
@@ -223,7 +223,7 @@ for currsample in sampleorder:
         #seqprepcommmand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
         seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_merge.fastq.gz'  
         outputfiles.append(currsample+'_merge.fastq.gz')
-        print >>sys.stderr, seqprepcommmand
+        #print >>sys.stderr, seqprepcommmand
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         seqprepruns[currsample] = None
@@ -245,18 +245,22 @@ for currsample in sampleorder:
 
 if not singleendmode:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
-    for samplename, spoutput in results:
+    for samplename, command, spoutput in results:
         print >>sys.stderr, samplename +" merged"
         #print >>sys.stderr, spoutput
         seqprepcounts[samplename], errinfo = readseqprep(spoutput)
-        prepout += errinfo
+        prepout += samplename +"\n"
+        prepout += command+"\n"
+        prepout += errinfo+"\n"
 else:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, cutadaptruns[currsample]]) for currsample in sampleorder))
-    for samplename, caoutput in results:
+    for samplename,  command, caoutput in results:
         
         print >>sys.stderr, samplename +" trimmed"
         cutadaptcounts[samplename], errinfo = readcutadapt(caoutput)
-        prepout += errinfo
+        prepout += samplename+"\n"
+        prepout += command+"\n"
+        prepout += errinfo+"\n"
         
 #print >>sys.stderr,  cutadaptcounts.keys()
 #sys.exit()

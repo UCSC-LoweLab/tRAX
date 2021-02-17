@@ -210,7 +210,9 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
                 realbase = geneseqs[currfeat.name][i]
                 #print >>sys.stderr, len(geneseqs[currfeat.name])
                 #print >>sys.stderr, 
-                if maxpercent[i] < mismatchthreshold:
+                lastbase = max([i - 1, 0])
+                nextbase = min([i + 1, len(maxpercent) - 1])
+                if maxpercent[i] < mismatchthreshold and maxpercent[lastbase] < mismatchthreshold and maxpercent[nextbase] < mismatchthreshold: 
                     continue
                 if realbase in gapchars:
                     
