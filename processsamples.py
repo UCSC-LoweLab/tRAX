@@ -65,7 +65,9 @@ parser.add_argument('--paironly', action="store_true", default=False,
 parser.add_argument('--makehub', action="store_true", default=False,
                    help='make a track hub')
 parser.add_argument('--hubonly', action="store_true", default=False,
-                   help='make only the track hub')
+                   help='Only make the track hub')
+parser.add_argument('--maponly', action="store_true", default=False,
+                   help='Only do the mapping step')
 #parser.add_argument('--maketdr', action="store_true", default=False,
 #                   help='create tdrs')
 #parser.add_argument('--makeall', action="store_true", default=False,
@@ -268,6 +270,7 @@ nofrag= args.nofrag
 nosizefactors = args.nosizefactors
 olddeseq = args.olddeseq
 bamdir = args.bamdir
+maponly = args.maponly
 
 mismatch = False
 paironly= args.paironly
@@ -507,7 +510,8 @@ runrscript(scriptdir+"/featuretypes.R",expinfo.mapinfo,expinfo.mapplot)
 #print >>sys.stderr, "Counting Read Types"
 #counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles, ignoresizefactors = nosizefactors)
 
-
+if maponly:
+    sys.exit()
 #Count the reads for DEseq2 and scatter plots
 print >>sys.stderr, "Counting Reads"
 countfeatures(samplefilename, trnainfo,expinfo, ensgtf, bedfiles, bamdir = bamdir,  cores = cores)
