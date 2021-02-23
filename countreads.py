@@ -228,8 +228,7 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
                 continue
             if not currfeat.coverage(currread) > 10:
                 continue
-            if samplename == "TIGR4_pCSP_2_DM":
-                print >>sys.stderr, "***"
+
             curramino = trnainfo.getamino(currfeat.name)
             curranticodon = trnainfo.getanticodon(currfeat.name)
             #samplecounts.addfragcount(currfeat.name, fragtype)

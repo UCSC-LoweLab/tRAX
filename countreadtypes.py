@@ -50,7 +50,7 @@ class counttypes:
         self.partiallocuscounts = defaultdict(int)
         self.fulllocuscounts = defaultdict(int)
         self.extraseqcounts = defaultdict(int)
-        
+        self.trnaantilocuscounts  = defaultdict(int)
 
     def addsamplecounts(self):
         self.totalreads += 1
@@ -66,6 +66,8 @@ class counttypes:
         self.trnareads += 1
     def addtrnacounts(self, currbed):
         self.trnacounts[currbed] += 1
+    def addtrnaantilocuscounts(self, currbed):
+        self.trnaantilocuscounts[currbed] += 1
     def addtrnalocuscounts(self, currbed):
         self.trnalocuscounts[currbed] += 1
     def addfulllocuscounts(self, currbed):
@@ -145,8 +147,11 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
         for currbed in trnaloci:
             for currfeat in trnaloci[currbed].getbin(currread):
                 expandfeat = currfeat.addmargin(30)
+                
                 if currfeat.coverage(currread) > 10 and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
-
+                    if currfeat.strand != currread.strand:
+                        readtypecounts.addantilocuscounts(currbed)
+                        break
                     
                     readtypecounts.addpretrnareadlengths(readlength)
                     readtypecounts.addtrnalocuscounts(currbed)
@@ -329,6 +334,7 @@ def printtypefile(countfile,samples, sampledata,allcounts,trnalist, trnaloci, be
                 #print  >>countfile, "pretRNA_partial\t"+"\t".join(str(sumsamples(partialtrnalocuscounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
                 #print  >>countfile, "pretRNA_trailer\t"+"\t".join(str(sumsamples(trnalocustrailercounts,sampledata,currrep, currbed, sizefactors = sizefactor)) for currrep in replicates)
             else:
+                print  >>countfile, "pretRNA_amtosemse\t"+"\t".join(str(sum(allcounts[currsample].trnaantilocuscounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
                 print  >>countfile, "pretRNA\t"+"\t".join(str(sum(allcounts[currsample].trnalocuscounts[currbed]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
 
         for currbed in trnalist:

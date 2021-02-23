@@ -127,6 +127,8 @@ parser.add_argument('--singleend', action="store_true", default=False,
                    help='single-end mode (uses cutadapt)')
 parser.add_argument('--umilength',default ='0',
                    help='length of UMI (uses umi_tools to extract if present)')
+parser.add_argument('--umithreeprime', action="store_true", default=False,
+                   help='umi is at the three prime end')
 parser.add_argument('--cores',
                    help='number of processors to use')
 
@@ -138,6 +140,7 @@ firadapter = args.firadapter
 secadapter =   args.secadapter
 minlength = args.minlength
 singleendmode = args.singleend
+threeprimeumi = args.umithreeprime
 umilength = int(args.umilength)
 cores = cpu_count()
 if args.cores is not None:
@@ -218,8 +221,9 @@ cutadaptruns = dict()
 #print >>sys.stderr, cores
 
 trimpool = Pool(processes=int(cores))
-
-
+umiargs = ""
+if threeprimeumi:
+    umiargs += " --3prime "
 
 for currsample in sampleorder:
     
@@ -227,7 +231,7 @@ for currsample in sampleorder:
         seqprepcommmand = ""
         if umilength  > 0:
             seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_m.fastq.gz; '
-            seqprepcommmand += "umi_tools extract --stdin="+currsample+"_m.fastq.gz --bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz 1>&2'
+            seqprepcommmand += "umi_tools extract --stdin="+currsample+"_m.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz 1>&2'
         else:
             seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_merge.fastq.gz'
 
@@ -245,7 +249,7 @@ for currsample in sampleorder:
         #cutadapt -m 15 --adapter='TGGAATTCTCGGGTGCCAAGG'  Testicular_sperm/Fraction4/Fraction4_S2_L002_R1_001.fastq.gz                           | gzip -c > trimmed/Fraction4_S2_L002_R1_001_TRIM.fastq.gz                      
         if umilength > 0:
             cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_t.fastq.gz;'
-            cutadaptcommand += "umi_tools extract --stdin="+currsample+"_t.fastq.gz --bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz 1>&2'
+            cutadaptcommand += "umi_tools extract --stdin="+currsample+"_t.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz 1>&2'
             
         else:
             cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_trimmed.fastq.gz'

@@ -63,6 +63,9 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
     trnareads = 0
     maxreads = 0
     diffreads = 0
+    
+    uniquenontrnas = 0
+    nonuniquenontrnas = 0
     #gzsam = gzip.open(samfile, "rb")
     bamfile = pysam.Samfile("-", "r" )
     sort = True
@@ -218,14 +221,17 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
 
             for curr in newset:
                 pass
+            
                 finalset.append(curr)
             #print >>sys.stderr, "len: "+str(len(finalset))    
             if len(finalset) > maxmaps:
                 duperemove += 1
                 #print >>sys.stderr, "**"
                 continue
-            
-
+            if len(newset) > 1:
+                nonuniquenontrnas += 1
+            else:
+                uniquenontrnas += 1
         #print >>sys.stderr,  sum(isprimarymapping(curr) for curr in finalset)
         #This bit is for ensuring that, if I remove the old primary mapping, a new one is chosen
         #Nesecarry for calculating read proportions
@@ -260,9 +266,14 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
         for currset in trnasetcounts:
             print ",".join(currset) +"\t"+str(trnasetcounts[currset])
     #print >>logfile, str(diffreads)+"/"+str(trnareads)
-    print >>logfile, "tRNA Reads with multiple transcripts:"+str(ambtrna)+"/"+str(trnareads)
-    print >>logfile, "tRNA Reads with multiple anticodons:"+str(ambanticodon)+"/"+str(trnareads)
-    print >>logfile, "tRNA Reads with multiple aminos:"+str(ambamino)+"/"+str(trnareads)
+    
+    
+    print >>logfile, "tRNA Reads with multiple transcripts:"+str(ambtrna)
+    print >>logfile, "tRNA Reads with multiple anticodons:"+str(ambanticodon)
+    print >>logfile, "tRNA Reads with multiple aminos:"+str(ambamino)
+    print >>logfile, "Total tRNA Reads:"+str(trnareads)
+    print >>logfile, "Single mapped non-tRNAs:"+str(uniquenontrnas)
+    print >>logfile, "Multiply mapped non-tRNAs:"+str(nonuniquenontrnas)
     print >>logfile, "Imperfect matches:"+str(imperfect)+"/"+str(trnareads)
     #print >>logfile, "Extra Imperfect matches:"+str(extraimperfect)+"/"+str(trnareads)
     
@@ -283,6 +294,7 @@ if __name__ == "__main__":
                        help='fastq file name')
     parser.add_argument('--expname',
                        help='library name')
+
     parser.add_argument('--trnasetcounts',
                        help='Counts for all sets of tRNAs')
     parser.add_argument('--minnontrnasize',type=int,default=20,

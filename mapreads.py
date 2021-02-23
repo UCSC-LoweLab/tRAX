@@ -18,6 +18,23 @@ MAXMAPS = 100
 
 defaultminnontrnasize = 20
 
+class trnainfo:
+    def __init__(self,multtrans,multac,multamino ,trna ,singlenon,multiplenon):
+        
+        self.multtrans    = int(multtrans)
+        self.multac       = int(multac)
+        self.multamino    = int(multamino)
+        self.trna         = int(trna)
+        self.singlenon    = int(singlenon)
+        self.multiplenon  = int(multiplenon )
+        self.multitrna = (self.multtrans + self.multac + self.multamino)
+        self.singletrna = self.trna - self.multitrna
+        
+    def uniquereads(self):
+       return  self.singletrna + self.singlenon
+    def nonuniquereads(self):
+       return self.multitrna + self.multiplenon
+       
 def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXMAPS,program = 'bowtie2', logfile = None, mapfile = None, expname = None, samplename = None, minnontrnasize = defaultminnontrnasize, numcores = 1):
     '''
     I think the quals are irrelevant due to the RT step, and N should be scored as only slightly better than a mismatch
@@ -50,6 +67,25 @@ def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXM
     if bowtierun.returncode:
         return mapinfo(0,0,0,0, errinfo, samplename, failedrun = True, bowtiecommand = bowtiecommand)
 
+    '''
+    tRNA Reads with multiple transcripts:1637/1942451
+    tRNA Reads with multiple anticodons:46/1942451
+    tRNA Reads with multiple aminos:33/1942451
+    Single mapped non-tRNAs:50865
+    Multiply mapped non-tRNAs:313735
+    Imperfect matches:1931867/1942451
+    '''
+
+    rereadmulttrans = re.search(r'tRNA Reads with multiple transcripts:(\d+)',errinfo )
+    rereadmultac = re.search(r'tRNA Reads with multiple anticodons:(\d+)',errinfo )
+    rereadmultamino = re.search(r'tRNA Reads with multiple aminos:(\d+)',errinfo )
+    rereadtrna = re.search(r'Total tRNA Reads:(\d+)',errinfo )
+    rereadsinglenon = re.search(r'Single mapped non-tRNAs:(\d+)',errinfo )
+    rereadmultiplenon = re.search(r'Multiply mapped non-tRNAs:(\d+)',errinfo )
+    trnamapinfo = None
+    if rereadmulttrans and rereadmultac and rereadmultamino and rereadtrna and rereadsinglenon and rereadmultiplenon:
+         trnamapinfo = trnainfo(rereadmulttrans.group(1),rereadmultac.group(1),rereadmultamino.group(1) ,rereadtrna.group(1) ,rereadsinglenon.group(1),rereadmultiplenon.group(1) ) 
+
 
     rereadtotal = re.search(r'(\d+).*reads',errinfo )
     rereadunmap = re.search(r'\s*(\d+).*0 times',errinfo )
@@ -60,7 +96,7 @@ def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXM
         unmappedreads = rereadunmap.group(1)
         singlemaps = rereadsingle.group(1)
         multmaps = rereadmult.group(1)
-        return mapinfo(singlemaps,multmaps,unmappedreads,totalreads, errinfo, samplename, bowtiecommand = bowtiecommand)
+        return mapinfo(singlemaps,multmaps,unmappedreads,totalreads, errinfo, samplename, bowtiecommand = bowtiecommand, trnamapinfo = trnamapinfo)
         
     else:
         print >>sys.stderr, "Could not map "+unpaired +", check mapstats file"
@@ -90,15 +126,24 @@ def checkheaders(bamname, fqname):
 
     
 class mapinfo:
-    def __init__(self, singlemap, multimap, unmap, totalreads, bowtietext, samplename, failedrun = False, bowtiecommand = None):
+    def __init__(self, singlemap, multimap, unmap, totalreads, bowtietext, samplename, failedrun = False, bowtiecommand = None, trnamapinfo = None):
         self.unmaps = unmap
-        self.singlemaps = singlemap
-        self.multimaps = multimap
+        self.bowtiesinglemaps = singlemap
+        self.bowtiemultimaps = multimap
         self.totalreads = totalreads
         self.bowtietext = bowtietext
         self.samplename = samplename
         self.failedrun = failedrun
         self.bowtiecommand = bowtiecommand
+        
+        
+        self.trnamapinfo = trnamapinfo
+        if trnamapinfo is not None:
+            self.singlemaps = trnamapinfo.uniquereads()
+            self.multimaps = trnamapinfo.nonuniquereads()
+        else: #has to use the raw bowtie2 output if no tRNA data
+            self.singlemaps = singlemap
+            self.multimaps = multimap
         self.unmap = int(self.totalreads) - (int(self.multimaps) + int(self.singlemaps))
     def printbowtie(self, logfile = sys.stderr):
         print >>logfile, "******************************************************************"
@@ -124,6 +169,7 @@ def testmain(**argdict):
     lazycreate = argdict["lazy"]
     minnontrnasize = argdict["minnontrnasize"]
     bamdir = argdict["bamdir"]
+    trnamapfile = argdict["trnamapfile"]
     if bamdir is None:
         bamdir = "./"
     
@@ -253,12 +299,26 @@ def testmain(**argdict):
     if mapfile is not None and not lazycreate:
         mapinfo = open(mapfile,'w')                
         print >>mapinfo, "\t".join(samples)
-        print >>mapinfo, "unmap\t"+"\t".join(mapresults[currsample].unmaps for currsample in samples)
-        print >>mapinfo, "single\t"+"\t".join(mapresults[currsample].singlemaps for currsample in samples)
-        print >>mapinfo, "multi\t"+"\t".join(mapresults[currsample].multimaps for currsample in samples)
-        #print >>mapinfo, "total\t"+"\t".join(totalreads[currsample] for currsample in samples)
+        print >>mapinfo, "unmap\t"+"\t".join(str(mapresults[currsample].unmaps) for currsample in samples)
+        print >>mapinfo, "single\t"+"\t".join(str(mapresults[currsample].singlemaps) for currsample in samples)
+        print >>mapinfo, "multi\t"+"\t".join(str(mapresults[currsample].multimaps) for currsample in samples)
         mapinfo.close()
-    
+        
+    if trnamapfile is not None and not lazycreate:
+        trnamapinfo = open(trnamapfile,'w')      
+        
+        print >>trnamapinfo, "\t".join(samples)
+        print >>trnamapinfo, "multi_nontRNA\t"+"\t".join(str(mapresults[currsample].trnamapinfo.multiplenon) for currsample in samples)
+        print >>trnamapinfo, "unique_nontRNA\t"+"\t".join(str(mapresults[currsample].trnamapinfo.singlenon) for currsample in samples)
+        print >>trnamapinfo, "multi_amino\t"+"\t".join(str(mapresults[currsample].trnamapinfo.multamino) for currsample in samples)
+        print >>trnamapinfo, "unique_amino\t"+"\t".join(str(mapresults[currsample].trnamapinfo.multac) for currsample in samples)
+        print >>trnamapinfo, "unique_anticodon\t"+"\t".join(str(mapresults[currsample].trnamapinfo.multtrans) for currsample in samples)
+        print >>trnamapinfo, "unique_tRNA\t"+"\t".join(str(mapresults[currsample].trnamapinfo.singletrna) for currsample in samples)
+        
+
+
+        #print >>mapinfo, "total\t"+"\t".join(totalreads[currsample] for currsample in samples)
+        trnamapinfo.close()
         
         
         #print >>logfile, "Processing "+samplename +" mappings"
@@ -380,6 +440,9 @@ def main(**argdict):
         mapinfo.close()
     
         
+
+    
+
         
         
         #print >>logfile, "Processing "+samplename +" mappings"
@@ -399,6 +462,8 @@ if __name__ == "__main__":
                        help='log file for error messages and mapping stats')
     parser.add_argument('--mapfile',
                        help='output table with mapping stats')
+    parser.add_argument('--trnamapfile',
+                       help='output table with trna mapping stats')
     parser.add_argument('--bowtiedb',
                        help='Location of Bowtie 2 database')
     parser.add_argument('--lazy', action="store_true", default=False,

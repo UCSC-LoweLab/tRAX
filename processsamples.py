@@ -133,6 +133,10 @@ class expdatabase:
         self.expname = expname
         self.mapinfo = expname+"/"+expname+"-mapinfo.txt"
         self.mapplot = expname+"/"+expname+"-mapinfo.pdf"
+
+        self.trnamapfile = expname+"/"+expname+"-trnamapinfo.txt"
+        self.trnamapplot = expname+"/"+expname+"-trnamapinfo.pdf"
+        
         
         self.maplog = expname+"/"+expname+"-mapstats.txt"
         self.genetypes = expname+"/"+expname+"-genetypes.txt"
@@ -186,7 +190,7 @@ class expdatabase:
         
 
 def mapsamples(samplefile, trnainfo,expinfo, lazyremap, bamdir = "./",  cores = 8, minnontrnasize = 20):
-    mapreads.testmain(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo, lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize)
+    mapreads.testmain(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo,trnamapfile = expinfo.trnamapfile,lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize)
 def countfeatures(samplefile, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = "./", cores = 8):
     countreads.testmain(samplefile=samplefile,ensemblgtf=ensgtf,maturetrnas=[trnainfo.maturetrnas], bamdir = bamdir, otherseqs = trnainfo.otherseqs,trnaloci=[trnainfo.locifile],removepseudo=True,genetypefile=expinfo.genetypes,trnatable=trnainfo.trnatable,countfile=expinfo.genecounts,bedfile=bedfiles, trnacounts = expinfo.trnacounts,trnaends = expinfo.trnaendfile,trnauniquecounts = expinfo.trnauniquefile,nofrag=nofrag, cores = cores)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.genecounts,samplefile,expinfo.pcaplot)
@@ -505,7 +509,7 @@ print >>dbinfo, "command\t"+" ".join(sys.argv)
 dbinfo.close()
 
 runrscript(scriptdir+"/featuretypes.R",expinfo.mapinfo,expinfo.mapplot)
-
+runrscript(scriptdir+"/featuretypes.R",expinfo.trnamapfile,expinfo.trnamapplot)
 
 #print >>sys.stderr, "Counting Read Types"
 #counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles, ignoresizefactors = nosizefactors)
@@ -524,15 +528,16 @@ print >>sys.stderr, "Analyzing counts"
 if pairfile:
     if olddeseq:
         deseqret = runrscript(scriptdir+"/deseq1.R",expname,expinfo.genecounts,samplefilename)
-        if deseqret == 2:
+        if deseqret >  0:
             print >>sys.stderr, "Deseq analysis failed, cannot continue"
             sys.exit(1)    
     else:
         deseqret = runrscript(scriptdir+"/analyzecounts.R",expname,expinfo.genecounts,samplefilename, pairfile)
         print >>sys.stderr, scriptdir+"/analyzecounts.R",expname,expinfo.genecounts,samplefilename, pairfile
 
-        if deseqret == 2:
+        if deseqret > 0:
             print >>sys.stderr, "Deseq analysis failed, cannot continue"
+            print >>sys.stderr, "Likely that a sample did not contain enough reads"
             sys.exit(1)
     
     runrscript(scriptdir+"/makescatter.R",expname,expinfo.normalizedcounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)

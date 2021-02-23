@@ -140,7 +140,7 @@ class readcoverage:
             pass
         
 
-def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,geneseqs,sizefactor, mincoverage):
+def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,geneseqs,sizefactor, mincoverage, outbed = None):
 
     print >>mismatchreport, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","readstotal","expreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
     #print >>sys.stderr,mismatchreport
@@ -214,6 +214,8 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
                 nextbase = min([i + 1, len(maxpercent) - 1])
                 if maxpercent[i] < mismatchthreshold and maxpercent[lastbase] < mismatchthreshold and maxpercent[nextbase] < mismatchthreshold: 
                     continue
+                if outbed is not None:
+                    print >>outbed, currfeat.getbase(i).bedstring(name = currfeat.name+"_pos"+str(i))
                 if realbase in gapchars:
                     
                     realbase = "-"
@@ -486,6 +488,7 @@ def main(**argdict):
     chroms = faitobed(genomefasta+".fai")
     ensemblgtf = argdict["ensemblgtf"]
     bedfiles = argdict["bedfile"]
+    outbed = argdict["outbed"]
     if bedfiles is None:
         bedfiles = list()
     coveragefile = argdict["covfile"]
@@ -493,9 +496,10 @@ def main(**argdict):
         print >>sys.stderr, "no output file (--covfile)"
         sys.exit(1)
     embllist = list()
-    ensemblgtf = os.path.expanduser(ensemblgtf)
+    
     bedlist = list()
     if ensemblgtf is not None:    
+        ensemblgtf = os.path.expanduser(ensemblgtf)
         embllist = list(readgtf(ensemblgtf, filtertypes = set(), seqfile= genomefasta))
     for currbed in bedfiles:
         bedlist.extend(readbed(currbed, seqfile= genomefasta))
@@ -558,7 +562,9 @@ def main(**argdict):
         for i, currsample in enumerate(samples):
             samplecoverages[currsample] = results[i]
     coveragetable = open(coveragefile, "w")
-    transcriptcoverage(samplecoverages, coveragetable, genelist,sampledata,geneseqs,sizefactor, mincoverage)
+    if outbed is not None:
+        outbed = open(outbed, "w")
+    transcriptcoverage(samplecoverages, coveragetable, genelist,sampledata,geneseqs,sizefactor, mincoverage, outbed = outbed)
  
             
 if __name__ == "__main__":
@@ -573,6 +579,8 @@ if __name__ == "__main__":
                        help='ensemblgtf')
     parser.add_argument('--covfile',
                        help='output coverage file')
+    parser.add_argument('--outbed',
+                       help='output bed file')
     parser.add_argument('--cores',
                        help='cores')
     parser.add_argument('--sizefactors',
