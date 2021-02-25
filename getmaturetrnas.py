@@ -12,6 +12,7 @@ from trnasequtils import *
 
 
 
+    
 #This program gets the mature tRNA sequences
 
 def main(**args):
@@ -123,15 +124,15 @@ def main(**args):
         devnull = open(os.devnull, 'w')
         seqfile = tempmultifasta(((currtrans.name, currtrans.getmatureseq(addcca = not prokmode)) for currtrans in alltrnas))
         cmcommand = ['cmalign', "-o", stkfile,"--nonbanded", "--notrunc","-g",trnacmfile,seqfile.name]
-        #print >>sys.stderr, " ".join(cmcommand)
+        
         cmrun = subprocess.Popen(cmcommand, stdout = devnull)
         result = cmrun.wait()
         if result:
             print >>sys.stderr, "Failure to align tRNAs"
             sys.exit(1)
-        #stkout = cmrun.communicate()[0]
-        #trnaalign = readrnastk(stkout.split("\n"))[0]
         seqfile.close()
+        #print >>sys.stderr, " ".join(cmcommand)
+
         
     if args["locibed"]:
         locibed = open(args["locibed"],"w")
