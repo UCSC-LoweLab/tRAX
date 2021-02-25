@@ -687,7 +687,7 @@ def testmain(**argdict):
         locipositionnums = gettnanums(locistk, margin = lociedgemargin, orgtype = orgtype)
 
     #print(orgtype)
-    print >>sys.stderr, locipositionnums
+    #print >>sys.stderr, locipositionnums
     #print(trnastk.aligns["tRNA-Arg-TCG-1"])
     
     trnastk = trnastk.addmargin(edgemargin)
