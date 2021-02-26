@@ -214,8 +214,8 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
                 nextbase = min([i + 1, len(maxpercent) - 1])
                 if maxpercent[i] < mismatchthreshold and maxpercent[lastbase] < mismatchthreshold and maxpercent[nextbase] < mismatchthreshold: 
                     continue
-                if outbed is not None:
-                    print >>outbed, currfeat.getbase(i).bedstring(name = currfeat.name+"_pos"+str(i))
+                if outbed is not None and maxpercent[lastbase] < mismatchthreshold:
+                    print >>outbed, currfeat.getbase(i).bedstring(name = currfeat.name+"_"+str(i)+"pos")
                 if realbase in gapchars:
                     
                     realbase = "-"
