@@ -132,8 +132,10 @@ class readcoverage:
                 self.coverage[currpos] += 1
     def addbase(self, base):
         #self.totalreads += 1
- 
-        posbase = base - self.region.start
+        if self.region.strand == "+":
+            posbase = base - self.region.start
+        else:
+            posbase = self.region.end - base
         if 0 <= posbase <= len(self.coverage) - 1:
             self.coverage[posbase] += 1
         else:
@@ -144,8 +146,9 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
 
     print >>mismatchreport, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","readstotal","expreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
     #print >>sys.stderr,mismatchreport
-    print >>sys.stderr,"||***"
+    #print >>sys.stderr,"||***"
     samples = sampledata.getsamples()
+    mismatchthreshold = .05
     for currfeat in genelist:
         #print >>sys.stderr, totalreads
         #print >>sys.stderr, samplecoverages[list(samples)[0]].allcoverages.keys()
@@ -176,7 +179,8 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
             maxcov[currpos] = max(coveragepos[currsample][currpos] for currsample in samples)
             maxpercent[currpos] = max((0+1.*mismatchpos[currsample][currpos])/(10+coveragepos[currsample][currpos]) for currsample in samples)
             #print >>sys.stderr, currfeat.name+":"+str(currpos)+":"+str(maxmismatch[currpos])+"/"+str(maxcov[currpos])+":"+str(maxpercent[currpos])
-
+            if maxpercent[currpos] > mismatchthreshold:
+                print >>outbed, currfeat.getbase(currpos).bedstring(name = currfeat.name+"_"+str(currpos)+"pos", score = int(maxpercent[currpos] * 1000))
         for currsample in samples:
             #readcounts = samplecoverages[currsample].readcounts
             
@@ -206,16 +210,20 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
             readskipcount  = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].readskips[currfeat.name].coveragelist())
 
             for i, currcount in enumerate(allcovcount):
-                mismatchthreshold = .05
+                
                 realbase = geneseqs[currfeat.name][i]
                 #print >>sys.stderr, len(geneseqs[currfeat.name])
                 #print >>sys.stderr, 
                 lastbase = max([i - 1, 0])
                 nextbase = min([i + 1, len(maxpercent) - 1])
+                #totalbases = sum([deletions[i],adeninecount[i],thyminecount[i],cytosinecount[i],guanosinecount[i]])
+                #maxbase = max([deletions[i],adeninecount[i],thyminecount[i],cytosinecount[i],guanosinecount[i]])
+                #if maxpercent[i] < mismatchthreshold and  maxbase < totalbases * .90:
+                #    print >>sys.stderr, "ERROR: "  str(maxbase)+"/"+str(totalbases)+mismatchthreshold
                 if maxpercent[i] < mismatchthreshold and maxpercent[lastbase] < mismatchthreshold and maxpercent[nextbase] < mismatchthreshold: 
                     continue
-                if outbed is not None and maxpercent[lastbase] < mismatchthreshold:
-                    print >>outbed, currfeat.getbase(i).bedstring(name = currfeat.name+"_"+str(i)+"pos")
+                if outbed is not None and not maxpercent[i] < mismatchthreshold:
+                    pass
                 if realbase in gapchars:
                     
                     realbase = "-"
@@ -263,7 +271,8 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
         sys.exit()
         
     for i, currfeat in enumerate(genelist):
-
+        #if currfeat.name != "FEATURE399_minus_145255":
+        #    continue
         allcoverages[currfeat.name] = readcoverage(genelist[i])
         uniquegenomecoverages[currfeat.name] = readcoverage(genelist[i])
         multigenomecoverages[currfeat.name] = readcoverage(genelist[i])
@@ -368,14 +377,16 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
                 
                 #if currread.name == "NB501427:156:H2F7MAFXY:3:21609:5222:18520":
                 #if len(refseq) != 0:
-                #    print >>sys.stderr, currread.getcigar()
-                #    print >>sys.stderr, currfeat.start
-                #    print >>sys.stderr, currread.start 
-                #    print >>sys.stderr, genestart
-                #    print >>sys.stderr, currfeat.name
-                #    print >>sys.stderr, currfeat.length()
-                #    print >>sys.stderr, currseq
-                #    
+                
+                #print >>sys.stderr, currread.getcigar()
+                #print >>sys.stderr, currfeat.start
+                #print >>sys.stderr, currread.start 
+                #print >>sys.stderr, genestart
+                #print >>sys.stderr, currfeat.name
+                #print >>sys.stderr, currfeat.length()
+                #print >>sys.stderr, alignseq
+                #print >>sys.stderr, refseq    
+                    
                 #if cigarreflength(currread.getcigar()) < cigarreadlength(currread.getcigar()):
                 #    print >>sys.stderr, currread.name
                 #    print >>sys.stderr, currread.getcigar()
@@ -412,6 +423,9 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
                 #    #continue
                 #    pass
                 for currpos in range(len(refseq)): #30
+                    currgenomepos = currread.start + currpos
+                    if currfeat.strand == "-":
+                        currgenomepos = currread.end - currpos
                     
                     if currpos < 0 or currpos >= len(refseq):
                         #print >>sys.stderr, currread.name
@@ -422,8 +436,11 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
                         #print >>sys.stderr,refseq
                         #print >>sys.stderr, currseq
                         pass
-                        
-                        
+  
+                    if skipends:
+                        if currpos < 3 or currpos > len(refseq) - 3 :
+                            #continue
+                            pass
                     currbase = alignseq[currpos]
 
 
@@ -434,28 +451,28 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
                             #if (currpos + currread.start) - readmismatches[trnaname].region.start < 0:
                             #    print >>sys.stderr, "before start: "+str(currpos)+"+"+str(currread.start) +"-"+str(readmismatches[trnaname].region.start)
                             #    #base - self.region.start
-                            
-
-                            readmismatches[trnaname].addbase(currread.start + currpos)
+                            #print >>sys.stderr, alignseq
+                            #print >>sys.stderr, refseq  
+                            #print >>sys.stderr, ("-"*currpos)+"*"+("-"*(len(refseq)-currpos - 1))
+                            #print >>sys.stderr, str(currread.start + currpos)
+                            readmismatches[trnaname].addbase(currgenomepos)
                         #allcoverages[trnaname].addbase(currread.start + currpos)
-                        if skipends:
-                            if currpos < 3 or currpos > cigarreflength(currread.getcigar()) - 3 :
-                                continue
+
                         #allcoverages[genelist[i].name].addbase(currread.start + currpos)
                         #if currpos > 3:
                         #    trimreadcoverage[trnaname].addbase(currread.start + currpos)
                         #    if refbase != currbase:
                         #        trimreadmismatches[trnaname].addbase(currread.start + currpos)
                         if currbase == "-":
-                            readskips[trnaname].addbase(currread.start + currpos)
+                            readskips[trnaname].addbase(currgenomepos)
                         if currbase == "A":
-                            adeninemismatches[trnaname].addbase(currread.start + currpos)
+                            adeninemismatches[trnaname].addbase(currgenomepos)
                         elif currbase == "T":
-                            thyminemismatches[trnaname].addbase(currread.start + currpos)
+                            thyminemismatches[trnaname].addbase(currgenomepos)
                         elif currbase == "C":
-                            cytosinemismatches[trnaname].addbase(currread.start + currpos)
+                            cytosinemismatches[trnaname].addbase(currgenomepos)
                         elif currbase == "G":
-                            guanosinemismatches[trnaname].addbase(currread.start + currpos)
+                            guanosinemismatches[trnaname].addbase(currgenomepos)
     #print >>sys.stderr, currsample+":" +str(skipped)+"/"+str(total)+":"+str(((1.*skipped)/total))
     return coverageinfo( readcounts, allcoverages,readstarts, readends,multaminocoverages, multaccoverages, multtrnacoverages,uniquecoverages, uniquegenomecoverages,multigenomecoverages, readmismatches,adeninemismatches,thyminemismatches,cytosinemismatches, guanosinemismatches,readskips,trimmismatches = trimreadmismatches, trimcoverage = trimreadcoverage  )
 
@@ -500,7 +517,7 @@ def main(**argdict):
     bedlist = list()
     if ensemblgtf is not None:    
         ensemblgtf = os.path.expanduser(ensemblgtf)
-        embllist = list(readgtf(ensemblgtf, filtertypes = set(), seqfile= genomefasta))
+        embllist = list(readgtf(ensemblgtf, filtertypes = set(), seqfile= genomefasta, replacename = True))
     for currbed in bedfiles:
         bedlist.extend(readbed(currbed, seqfile= genomefasta))
     genelist = embllist + bedlist
@@ -547,7 +564,6 @@ def main(**argdict):
     lociargs = list()
     
     locicoverages = dict()
-    print >>sys.stderr, threadmode
     #sys.exit(1)
     if not threadmode:
         for currsample in samples:
