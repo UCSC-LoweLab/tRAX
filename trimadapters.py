@@ -79,7 +79,7 @@ def readseqprep(processoutput):
     seqprepcounts["unmerged"] = totalreads - (merged + discard)
     seqprepcounts["discarded"] = discard
     return seqprepcounts, errinfo
-    
+
 def readcutadapt(processoutput):
     cutadaptcounts = dict()
     output = processoutput.communicate()
@@ -105,8 +105,8 @@ def readcutadapt(processoutput):
         elif writtenmatch:
             written = int(writtenmatch.group(1).replace(",",""))
            
-    cutadaptcounts["trimmed"] = trimmed
-    cutadaptcounts["untrimmed"] = totalreads - (trimmed + discard)
+    cutadaptcounts["trimmed"] = trimmed - discard
+    cutadaptcounts["untrimmed"] = totalreads - (trimmed)
     cutadaptcounts["discarded"] = discard
     return cutadaptcounts, errinfo
 scriptdir = os.path.dirname(os.path.realpath(sys.argv[0]))+"/"
