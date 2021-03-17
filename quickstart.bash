@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Supported genomes
-GENOMES=("hg19" "hg38" "rn6" "mm10" "sacCer3")
+GENOMES=("hg19" "hg38" "rn6" "mm10" "sacCer3" "hg19mito" "hg38mito" "mm10mito")
 
 # Help function
 function print_usage() {
@@ -27,10 +27,9 @@ function docker_build_db() {
   else
     docker volume create rnadb-${1}
     docker run --rm -it --name trax-build-rnadb-${1} \
-      -v `pwd`:/opt/trax \
       -v rnadb-${1}:/rnadb \
       trax \
-      quickdb_trax.bash ${1}
+      quickdb.bash ${1}
   fi
 }
 

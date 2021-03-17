@@ -23,7 +23,7 @@ function db_builder() {
        GENOME_URL="http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz"
        FASTA=true
   elif test "${1}" = "hg38"
-    then 
+    then
        GTF_URL="ftp://ftp.ensembl.org/pub/release-102/gtf/homo_sapiens/Homo_sapiens.GRCh38.102.gtf.gz"
        gtRNAdb_URL="http://gtrnadb.ucsc.edu/GtRNAdb2/genomes/eukaryota/Hsapi38/hg38-tRNAs.tar.gz"
        gtRNAdb_OUT="hg38-tRNAs-detailed.out"
@@ -92,15 +92,15 @@ function db_builder() {
     grep -e Mt_rRNA -e Mt_tRNA -e miRNA -e misc_RNA -e rRNA -e snRNA -e snoRNA -e ribozyme -e sRNA -e scaRNA \
     > ${2}/genes.gtf
   echo "Generating GTF Done"
-  
-  if test ${downloaddb} = true 
+
+  if test ${downloaddb} = true
   then
-       echo "Doqnloading TRAX db"
-       wget -O ${2}/mitodb.tar.gz ${dburl} 
+       echo "Downloading TRAX db"
+       wget -O ${2}/mitodb.tar.gz ${dburl}
        tar zxf ${2}/mitodb.tar.gz -C ${2}
        exit 0
   fi
-      
+
 
   # gtRNAdb Files
   echo "Generating gtRNAdb"
@@ -116,9 +116,7 @@ function db_builder() {
       wget -q -O - ${GENOME_URL} | gzip -cd > ${DB_LOCATION}/genome.fa
   else
     wget -q -O ${2}/genome.2bit ${GENOME_URL}
-    wget -q -O ${2}/twoBitToFa http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/twoBitToFa
-    chmod +x ${2}/twoBitToFa
-    ${2}/twoBitToFa ${DB_LOCATION}/genome.2bit ${DB_LOCATION}/genome.fa
+    twoBitToFa ${DB_LOCATION}/genome.2bit ${DB_LOCATION}/genome.fa
   fi
   echo "Generating Fasta Done"
 

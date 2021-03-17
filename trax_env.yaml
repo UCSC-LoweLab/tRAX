@@ -5,7 +5,9 @@ channels:
   - r
 dependencies:
   - python=2.7
+  - tbb=2020.2
   - ucsc-bedgraphtobigwig=377
+  - ucsc-twobittofa=377
   - bedtools=2.29.2
   - bowtie2=2.3.5
   - cutadapt=1.18
