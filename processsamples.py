@@ -543,7 +543,7 @@ if pairfile:
             sys.exit(1)
     
     runrscript(scriptdir+"/makescatter.R",expname,expinfo.normalizedcounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)
-    runrscript(scriptdir+"/endplot.R","--ends="+expinfo.trnaendfile,"--trna="+trnainfo.trnatable, "--samples="+samplefilename,"--directory="+expname+"/mismatch/")
+    runrscript(scriptdir+"/endplots.R","--ends="+expinfo.trnaendfile,"--trna="+trnainfo.trnatable, "--samples="+samplefilename,"--directory="+expname+"/mismatch/")
     
 
 elif not nosizefactors:
