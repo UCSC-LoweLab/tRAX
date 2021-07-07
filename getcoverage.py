@@ -259,7 +259,7 @@ def getlocicoverage(currsample, sampledata, trnaloci,maxmismatches = None, minex
                 
     return locicoverageinfo( readcounts, allcoverages)
 
-def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches = None, minextend = None): 
+def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches = None, minextend = None, removestart = True, uniqueonly = False): 
     
     currbam = sampledata.getbam(currsample)
     allcoverages = dict()
@@ -328,6 +328,8 @@ def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches =
 
                 if minextend is not None and not (currread.start + minextend <= trnalist[i].start or currread.end - minextend >= trnalist[i].end):
                     continue
+                if uniqueonly and not currread.issinglemapped():
+                    continue
 
                 readstart = currread.getfirst(1)
                 readend = currread.getlast(1)
@@ -379,14 +381,15 @@ def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches =
                             trimreadcoverage[trnaname].addbase(currread.start + currpos)
                             if refbase != currbase:
                                 trimreadmismatches[trnaname].addbase(currread.start + currpos)
-                        if currbase == "A":
-                            adeninemismatches[trnaname].addbase(currread.start + currpos)
-                        elif currbase == "T":
-                            thyminemismatches[trnaname].addbase(currread.start + currpos)
-                        elif currbase == "C":
-                            cytosinemismatches[trnaname].addbase(currread.start + currpos)
-                        elif currbase == "G":
-                            guanosinemismatches[trnaname].addbase(currread.start + currpos)
+                        if currpos > 3 and removestart:
+                            if currbase == "A":
+                                adeninemismatches[trnaname].addbase(currread.start + currpos)
+                            elif currbase == "T":
+                                thyminemismatches[trnaname].addbase(currread.start + currpos)
+                            elif currbase == "C":
+                                cytosinemismatches[trnaname].addbase(currread.start + currpos)
+                            elif currbase == "G":
+                                guanosinemismatches[trnaname].addbase(currread.start + currpos)
 
     return coverageinfo( readcounts, allcoverages,readstarts, readends,multaminocoverages, multaccoverages, multtrnacoverages,uniquecoverages, uniquegenomecoverages,multigenomecoverages, readmismatches,adeninemismatches,thyminemismatches,cytosinemismatches, guanosinemismatches,readskips,trimmismatches = trimreadmismatches, trimcoverage = trimreadcoverage  )
 
@@ -711,9 +714,11 @@ def testmain(**argdict):
 
     maxoffset = 10
     samplecoverages = dict()
+    uniquecoverages = dict()
     #threadmode = False
     trackargs = list()
     lociargs = list()
+    trackuniqargs = list()
     coveragepool = Pool(processes = cores)
     locicoverages = dict()
     #print >>sys.stderr, ",".join(curr.name for curr in locilist if "Ala" in curr.name)
@@ -721,11 +726,14 @@ def testmain(**argdict):
     if not threadmode:
         for currsample in samples:
             samplecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend)
+            #uniquecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True)
             locicoverages[currsample] =   getlocicoverage(  currsample, sampledata, locilist,  maxmismatches = maxmismatches, minextend = minextend)
  
     else:
         for currsample in samples:
             trackargs.append(compressargs(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend))
+            trackuniqargs.append(compressargs(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True))
+
             lociargs.append(compressargs(  currsample, sampledata, locilist,  maxmismatches = maxmismatches, minextend = minextend))
  
         results = coveragepool.map(makecoveragepool, trackargs)
@@ -734,12 +742,19 @@ def testmain(**argdict):
         lociresults = coveragepool.map(makelocicoveragepool, lociargs)
         for i, currsample in enumerate(samples):
             locicoverages[currsample] = lociresults[i]
+        #uniqresults = coveragepool.map(uniquecoverages, trackuniqargs)
+        #for i, currsample in enumerate(samples):
+        #    uniquecoverages[currsample] = uniqresults[i]
     #print >>sys.stderr, samplecoverages.values()
     coveragetable = open(argdict["allcoverage"], "w")
     locicoveragetable = open(argdict["locicoverage"], "w")
+    #uniqcoveragetable = open(argdict["uniqcoverage"], "w")
     mismatchcomparetable = open("mismatchcompare.txt", "w")
     
     transcriptcoverage(samplecoverages, coveragetable, trnalist,sampledata,sizefactor, mincoverage,trnastk, positionnums)
+    
+    #transcriptcoverage(uniquecoverages, uniqcoveragetable, trnalist,sampledata,sizefactor, mincoverage,trnastk, positionnums)
+
     
     if True:
         getdiffs(samplecoverages, mismatchcomparetable, trnalist,sampledata, sizefactor,mincoverage,trnastk, positionnums)

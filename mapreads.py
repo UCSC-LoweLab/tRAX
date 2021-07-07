@@ -35,7 +35,7 @@ class trnainfo:
     def nonuniquereads(self):
        return self.multitrna + self.multiplenon
        
-def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXMAPS,program = 'bowtie2', logfile = None, mapfile = None, expname = None, samplename = None, minnontrnasize = defaultminnontrnasize, numcores = 1):
+def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXMAPS,program = 'bowtie2', logfile = None, mapfile = None, expname = None, samplename = None, minnontrnasize = defaultminnontrnasize, numcores = 1, local = False):
     '''
     I think the quals are irrelevant due to the RT step, and N should be scored as only slightly better than a mismatch
     this does both
@@ -44,8 +44,10 @@ def wrapbowtie2(bowtiedb, unpaired, outfile, scriptdir, trnafile, maxmaps = MAXM
      --ignore-quals --np 5
      Very sensitive is necessary due to mismatch caused by modified base misreads
     ''' 
-
-    bowtiecommand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
+    localmode = " "
+    if local:
+        localmode = " --local "
+    bowtiecommand = program+localmode+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
 
     #print >>sys.stderr, bowtiecommand
     temploc = os.path.basename(outfile)
@@ -169,6 +171,8 @@ def testmain(**argdict):
     lazycreate = argdict["lazy"]
     minnontrnasize = argdict["minnontrnasize"]
     bamdir = argdict["bamdir"]
+    local = argdict["local"]
+    
     trnamapfile = argdict["trnamapfile"]
     if bamdir is None:
         bamdir = "./"
@@ -263,7 +267,7 @@ def testmain(**argdict):
                 print >>sys.stderr, "Skipping "+samplename
 
             else:
-                mapargs.append(compressargs(bowtiedb, sampledata.getfastq(samplename),bamfile,scriptdir, trnafile, expname = samplefilename, samplename = samplename, minnontrnasize = minnontrnasize))
+                mapargs.append(compressargs(bowtiedb, sampledata.getfastq(samplename),bamfile,scriptdir, trnafile, expname = samplefilename, samplename = samplename, minnontrnasize = minnontrnasize, local = local))
                 
                 
                 #mapresults[samplename] = mapreads(bowtiedb, sampledata.getfastq(samplename),bamfile,scriptdir, trnafile,  logfile=logfile, expname = samplefilename)
@@ -291,7 +295,7 @@ def testmain(**argdict):
                 
             else:
         
-                mapresults[samplename] = mapreads(bowtiedb, sampledata.getfastq(samplename),bamfile,scriptdir, trnafile,  logfile=logfile, expname = samplefilename, minnontrnasize = minnontrnasize)
+                mapresults[samplename] = mapreads(bowtiedb, sampledata.getfastq(samplename),bamfile,scriptdir, trnafile,  logfile=logfile, expname = samplefilename, minnontrnasize = minnontrnasize, local = local)
 
     if lazycreate:
         #here is where I might add stuff to read old files in lazy mode
@@ -468,6 +472,8 @@ if __name__ == "__main__":
                        help='Location of Bowtie 2 database')
     parser.add_argument('--lazy', action="store_true", default=False,
                        help='do not remap if mapping results exist')
+    parser.add_argument('--local', action="store_true", default=False,
+                       help='use local mapping')
     
     args = parser.parse_args()
     main(samplefile = args.samplefile, trnafile= args.trnafile, logfile = args.logfile, bowtiedb = args.bowtiedb, lazy = args.lazy, mapfile = args.mapfile)

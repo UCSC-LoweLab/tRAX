@@ -908,6 +908,7 @@ class BamRead(GenomeRange):
             return not self.bamline.get_tag("YR") > 1
         else:
             return None
+
     def hasindel(self):
         return len(self.bamline.cigar) > 1
     def getlength(self):
@@ -945,6 +946,9 @@ def getbam(bamfile, chromrange = None, primaryonly = False, singleonly = False, 
             #[("YA",len(anticodons))] + [("YM",len(aminos))]  + [("YR",len(trnamappings))]
             
             #continue
+            if currline.aend is None:
+                continue
+                print >>sys.stderr, currline
             if not allowindels and len(currline.cigar) > 1:
                 continue
             yield BamRead( currline,"genome",rname,currline.pos,currline.aend,strand, name = currline.qname)
@@ -1138,9 +1142,12 @@ class fastaindex:
         genomefile.close()
         finalseqs = dict()
         for currname in allseqs.iterkeys():
+            #print >>sys.stderr, currname
             #allseqs[currname] = allseqs[currname].upper()
             if (rangedict[currname].strand == "-"):
+                
                 seq = list(allseqs[currname].upper())
+                #print >>sys.stderr, "".join(seq)
                 seq.reverse()
                 comp = {"A":"T","T":"A", "C":"G","G":"C","N":"N","R":"Y","Y":"R","S":"W","W":"S", "K":"M", "M":"K"}
                 finalseqs[currname]  = ''.join(comp[base] for base in seq)

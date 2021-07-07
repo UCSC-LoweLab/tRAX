@@ -127,7 +127,7 @@ class seqprepinfo:
     def gettotal(self, sample):
         return self.merged[sample] + self.unmerged[sample] + self.discarded[sample]
     def getmergedpercent(self, sample):
-        return self.merged[sample] / (1.*self.gettotal(sample))
+        return self.merged[sample] / (1.*self.gettotal(sample) + .01)
     def getsamples(self):
         return tuple(self.merged.keys())
         
@@ -292,7 +292,7 @@ class mappingresults:
         return self.unmap[sample] + self.single[sample] + self.multi[sample]
     def getmappercent(self, sample):
         totalreads = self.totalreadscount(sample)
-        return (totalreads  - self.unmap[sample]) / (1.*totalreads) 
+        return (totalreads  - self.unmap[sample]) / (1.*totalreads+.01) 
         
 minmapreads = 200000
               
@@ -361,11 +361,11 @@ class typecount:
     def gettotal(self, sample):
         return sum(self.typecounts[sample].values()) 
     def gettrnapercent(self, sample):
-        return (self.typecounts[sample]["tRNA"] + self.typecounts[sample]["pretRNA"] )/ (1.*self.gettotal(sample))
+        return (self.typecounts[sample]["tRNA"] + self.typecounts[sample]["pretRNA"] )/ (1.*self.gettotal(sample)+.01)
     def getrrnapercent(self, sample):
         if "rRNA" in self.typecounts[sample]:
             
-            return self.typecounts[sample]["rRNA"] / (1.*self.gettotal(sample))
+            return self.typecounts[sample]["rRNA"] / (1.*self.gettotal(sample)+.01)
         else:
             return None
     def getotherpercent(self, sample):
@@ -403,7 +403,7 @@ Length	Sample	other	trnas	pretrnas
 1	nuc_rep2	0	0	0
 '''
 def getmeanfreq(freqtable):
-    return sum(curr * freqtable[curr] for curr in freqtable.keys()) / (1.*sum(freqtable.values()))
+    return sum(curr * freqtable[curr] for curr in freqtable.keys()) / (1.*sum(freqtable.values()) +.01)
 class lengthcount:
     def __init__(self, trnalengthcounts, pretrnalengthcounts, otherlengthcounts):
         self.trnalengthcounts = trnalengthcounts
@@ -532,7 +532,7 @@ class trnacount:
         #print >>sys.stderr, self.gettrnaactive(currsample, cutoff)
         #print >>sys.stderr, (1.*len(trnainfo.gettranscripts()))
         #print >>sys.stderr, self.trnacounts[currsample].keys()
-        return self.gettrnaactive(currsample, cutoff)/ (1.*len(trnainfo.gettranscripts()))
+        return self.gettrnaactive(currsample, cutoff)/ (1.*len(trnainfo.gettranscripts())+.01)
         
         
 def gettrnacounts(samplename, sampleinfo, trnainfo):
@@ -614,7 +614,7 @@ def checkgenecounts(samplename, sampleinfo, trnainfo, tgirtmode = False):
     #gotta fix ***
     samplesizefactors = {currsample : sizefactors.sizefactors[currsample] for currsample in samples}
 
-    badsizefactors = list(samplesizefactors[currsample] > sizefactordiff or samplesizefactors[currsample] < (1./sizefactordiff) for currsample in samples)
+    badsizefactors = list(samplesizefactors[currsample] > sizefactordiff or samplesizefactors[currsample] < (1./(sizefactordiff+.0001)) for currsample in samples)
     sizefactorerr = errorset("size_factors",samples, badsizefactors, "DESeq2 size factor differences < "+str(sizefactordiff)+"x","Size Factor" ,samplesizefactors,checkfile = samplename+"-SizeFactors.txt")
 
     #errorsingle(min(sizefactors.sizefactors.values())*sizefactordiff <  min(sizefactors.sizefactors.values()), "large DESeq2 sizefactor differences", " > "+str(sizefactordiff)+"x")

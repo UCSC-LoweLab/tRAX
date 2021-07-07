@@ -321,23 +321,23 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
         for currfeat in featurelist[currbed] :
             if currfeat.name in trnanames:
                 continue
-            #trnanames.add(currfeat.name)
+            trnanames.add(currfeat.name)
             if max(allcounts[currsample].counts[currfeat.name] for currsample in samples) > minreads:
-                print >>genetypeout, currfeat.name+"\t"+genetypes[currfeat.name]   
+                print >>genetypeout, currfeat.name+"\t"+genetypes[currfeat.name]   +"\t"+currfeat.chrom
     
         
     for currfeat in trnaloci:
-        print >>genetypeout, currfeat.name+"_wholeprecounts"+"\t"+"trna_wholeprecounts"
-        print >>genetypeout, currfeat.name+"_partialprecounts"+"\t"+"trna_partialprecounts"
-        print >>genetypeout, currfeat.name+"_trailercounts"+"\t"+"trna_trailercounts"
-        print >>genetypeout, currfeat.name+""+"\t"+"tRNA_locus"
+        print >>genetypeout, currfeat.name+"_wholeprecounts"+"\t"+"trna_wholeprecounts" +"\t"+currfeat.chrom
+        print >>genetypeout, currfeat.name+"_partialprecounts"+"\t"+"trna_partialprecounts"+"\t"+currfeat.chrom
+        print >>genetypeout, currfeat.name+"_trailercounts"+"\t"+"trna_trailercounts"+"\t"+currfeat.chrom
+        print >>genetypeout, currfeat.name+""+"\t"+"tRNA_locus"+"\t"+currfeat.chrom
     for currfeat in trnalist:
-        print >>genetypeout, currfeat.name+"_wholecounts"+"\t"+"trna_wholecounts"
-        print >>genetypeout, currfeat.name+"_fiveprime"+"\t"+"trna_fiveprime"
-        print >>genetypeout, currfeat.name+"_threeprime"+"\t"+"trna_threeprime"
-        print >>genetypeout, currfeat.name+"_other"+"\t"+"trna_other"
-        print >>genetypeout, currfeat.name+"_antisense"+"\t"+"trna_antisense"
-        print >>genetypeout, currfeat.name+""+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_wholecounts"+"\t"+"trna_wholecounts"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_fiveprime"+"\t"+"trna_fiveprime"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_threeprime"+"\t"+"trna_threeprime"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_other"+"\t"+"trna_other"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_antisense"+"\t"+"trna_antisense"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+""+"\t"+"tRNA"+"\t"+"tRNA"
     
     for currfeat in embllist:
         genename = currfeat.data['genename']
@@ -348,7 +348,7 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
             #print >>sys.stderr, currfeat.name
             continue
         if max(allcounts[currsample].counts[genename] for currsample in samples) > minreads:
-            print >>genetypeout, genename+"\t"+genetypes[genename]          
+            print >>genetypeout, genename+"\t"+genetypes[genename]        +"\t"+currfeat.chrom
     for currtype in otherseqdict.iterkeys():
         for currfeat in otherseqdict[currtype]:
             genename = currfeat.name
@@ -359,7 +359,7 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
                 #print >>sys.stderr, currfeat.name
                 continue
             if max(allcounts[currsample].counts[genename] for currsample in samples) > minreads:
-                print >>genetypeout, genename+"\t"+genetypes[genename]             
+                print >>genetypeout, genename+"\t"+genetypes[genename]    +"\t"+currfeat.chrom         
               
      
 def printtrnauniquecountcountfile(trnauniquefile,samples,  samplecounts, trnalist, trnaloci , minreads = 5):

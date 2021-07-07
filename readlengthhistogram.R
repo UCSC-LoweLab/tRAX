@@ -12,6 +12,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 #Rscript trailerbarplot.R hg19-trailertable.txt hg19-barplot.png
 readlengths <- read.table(args[1], header = TRUE)
+sampledata <- read.table(args[2], header = TRUE)
+
 
 
 
@@ -65,7 +67,10 @@ binnedlengths <- binnedlengths[order(binnedlengths$Sample,binnedlengths$bin),]
 #binnedlengths
 #binnedlengths$variable <- factor(binnedlengths$variable, levels = c("trnas", "other"))
 binnedlengths$variable <- factor(binnedlengths$variable, levels = c("other", "trnas"))
-ggplot(data=binnedlengths, aes(x = binnedlengths$bin, y = binnedlengths$value, fill = binnedlengths$variable))+geom_bar(stat="identity")+facet_wrap( ~ Sample, scales="free",ncol = 3)+ xlim(0,maxlen) + ylab("Count") + xlab("Read Length") + scale_fill_discrete(name="Gene Type")  + scale_x_continuous(labels = comma)
+binnedlengths$Sample <- factor(binnedlengths$Sample, levels = sampledata[,1])
+
+
+ggplot(data=binnedlengths, aes(x = binnedlengths$bin, y = binnedlengths$value, fill = binnedlengths$variable))+geom_bar(stat="identity")+facet_wrap( ~ Sample, scales="free",ncol = 3)+ xlim(0,maxlen) + ylab("Count") + xlab("Read Length") + scale_fill_discrete(name="Gene Type")  + scale_x_continuous(labels = comma) + theme_bw()
 #length(unique(binnedlengths$Sample))
-ggsave(filename=args[2],limitsize=FALSE,width = 8, height = .5 * length(unique(binnedlengths$Sample)))#, width = 3 * length(unique(binnedlengths$Sample))) 
+ggsave(filename=args[3],limitsize=FALSE,width = 8, height = .5 * length(unique(binnedlengths$Sample)))#, width = 3 * length(unique(binnedlengths$Sample))) 
     

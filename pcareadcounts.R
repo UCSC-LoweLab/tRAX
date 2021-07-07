@@ -14,7 +14,7 @@ sampledata = read.table(samplefile)
 
 #data <- data[,grepl("tRNA",colnames(data),fixed = TRUE)]
 #data <- data[grepl("tRNA",rownames(data),fixed = TRUE),]
-data <- data[rowSums(data) > 1,]
+data <- data[rowSums(data) > 20,]
 #length(colnames(data))
 datapca <- prcomp(t(data),center = TRUE,scale = TRUE) 
 

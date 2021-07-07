@@ -438,9 +438,9 @@ def gettrnasamples(positions, trnainfo,sampleinfo):
         for currsample in sampleinfo.getsamples():
         #for currsample in ["M_dm_Heart_M5_minusAlkB"]:
         #for currsample in ["M_dm_Liver_M5_minusAlkB"]:
-            
-            clustname = currsample + "_"+currpos+"pos"
-            yield clustname, [currsample],trnainfo.gettranscripts(), [currpos] 
+            for curramino in trnainfo.allaminos():
+                clustname = currsample +"_"+curramino+ "_"+currpos+"pos"
+                yield clustname, [currsample],trnainfo.getaminotranscripts(curramino), [currpos]  
                 
 def getsamples(positions, trnainfo,sampleinfo):
     for currpos in positions:
@@ -736,7 +736,7 @@ def main(**argdict):
     createtable(outfile, covcounts, pairgroup, minreads = minreads, skipmatches = False,shufflemode = False, drawmode = True)
     outfile.close()
      
-    ''' 
+    
     outfile = open(runname+"-trnacompare.txt","w")
     pairgroup = gettrnasamples(mismatchlocs, trnainfo,sampleinfo)
     createtable(outfile, covcounts, pairgroup, minreads = minreads, skipmatches = skipmatches,shufflemode = False, drawmode = False)
@@ -746,7 +746,7 @@ def main(**argdict):
     pairgroup = gettrnasamples(mismatchlocs, trnainfo,sampleinfo)
     createtable(outfile, covcounts, pairgroup, minreads = minreads, skipmatches = skipmatches,shufflemode = False, drawmode = True)
     outfile.close()
-    '''
+    
         
     outfile = open(runname+"-samplecompare.txt","w")
     pairgroup = getsamples(mismatchlocs, trnainfo,sampleinfo)

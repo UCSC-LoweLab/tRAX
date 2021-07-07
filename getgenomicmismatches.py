@@ -290,7 +290,7 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
         trimreadmismatches[currfeat.name] =  readcoverage(genelist[i])
         readcounts[currfeat.name] = 0
 
-        #print >>sys.stderr, trnalist[i]
+        #print >>sys.stderr, genelist[i].name
         for currread in getbam(bamfile, genelist[i]):
             
 
@@ -437,10 +437,9 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
                         #print >>sys.stderr, currseq
                         pass
   
-                    if skipends:
-                        if currpos < 3 or currpos > len(refseq) - 3 :
-                            #continue
-                            pass
+                    #if skipends:
+                    if currpos < 3: #or currpos > len(refseq) - 3 :
+                        continue
                     currbase = alignseq[currpos]
 
 
