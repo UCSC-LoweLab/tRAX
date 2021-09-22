@@ -22,3 +22,4 @@ dependencies:
   - r-gridextra=2.3
   - r-ggrepel=0.8.2
   - r-reshape2=1.4.4
+  - zsh
