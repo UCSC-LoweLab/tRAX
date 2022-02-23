@@ -55,6 +55,8 @@ counts = counts + 1
 
 counts <- merge(types,counts, by.x = 1, by.y = 0)
 colnames(counts)[2] <- "type"
+colnames(counts)[3] <- "chrom"
+colnames(counts)[4] <- "readsize"
 
 
 genetypes = c("trna_fiveprime","trna_threeprime","trna_other","trna_wholecounts","tRNA","snoRNA","miRNA","Mt_tRNA","rRNA","Mt_rRNA","snRNA")
@@ -260,6 +262,45 @@ currplot <- ggplot(trnacounts, aes_string(x=xaxis, y=yaxis)) + geom_point(aes(co
 #currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
 ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatter",outputformat,sep= ""), currplot)
 
+
+
+trnacounts$logfc = log2(trnacounts[,xaxis]) -  log2(trnacounts[,yaxis])
+#print(head(trnacounts))
+#print(max(abs(trnacounts$logfc)))
+currplot <- ggplot(trnacounts, aes_string(x="logfc", y="readsize")) + geom_point(aes(color=type), size = 1) + 
+    #scale_colour_manual(values = getPalette(colourCount)) + 
+    ggtitle(paste(xaxis, " vs ",yaxis, sep = "")) +
+    scale_colour_manual(values = typepal)+
+    #geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+
+    scale_x_continuous(limits = c(-max(abs(trnacounts$logfc)), max(abs(trnacounts$logfc)))) +
+    theme_bw() + 
+    #geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'))+
+    theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) 
+    
+#currplot <- ggplot(data=counts,x=trnacounts[,xaxis],y=trnacounts[,yaxis],xlab = xaxis,ylab = yaxis,color=type, asp=1) + scale_colour_manual(values = getPalette(colourCount)) + geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+
+
+
+#currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
+ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-lengthcompare",outputformat,sep= ""), currplot)
+
+trnacounts$mincounts = min(log2(trnacounts[,xaxis]),log2(trnacounts[,yaxis]))
+currplot <- ggplot(trnacounts, aes_string(x="logfc", y="mincounts")) + geom_point(aes(color=type), size = 1) + 
+    #scale_colour_manual(values = getPalette(colourCount)) + 
+    ggtitle(paste(xaxis, " vs ",yaxis, sep = "")) +
+    scale_colour_manual(values = typepal)+
+    #geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+
+    scale_x_continuous(limits = c(-max(abs(trnacounts$logfc)), max(abs(trnacounts$logfc)))) +
+    theme_bw() + 
+    #geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'))+
+    theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) 
+    
+#currplot <- ggplot(data=counts,x=trnacounts[,xaxis],y=trnacounts[,yaxis],xlab = xaxis,ylab = yaxis,color=type, asp=1) + scale_colour_manual(values = getPalette(colourCount)) + geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+
+
+
+#currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
+ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-countcompare",outputformat,sep= ""), currplot)
 
 #+scale_shape_manual(values = c(20,15, 17,18,19)) theme(legend.position = "bottom")
 #currplot <- ggplot(trnacounts, aes_string(x=xaxis, y=yaxis))+geom_point(aes(color=amino, size = dotsize, shape=fragtype))+guides(size=FALSE, ncol = 1)+scale_size_continuous(range = c(.75,2))+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))

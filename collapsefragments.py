@@ -80,7 +80,7 @@ class prunedict:
             self.totalkeys += 1
         self.counts[key] = count
         if self.totalkeys > self.maxkeys:
-            self.trim()
+            #self.trim()
 
             #print >>sys.stderr, str(len(self.counts.keys())) +"/"+ str(len(self.newdict.keys())) +":"+str(1.*len(self.counts.keys())/len(self.newdict.keys()))
             if self.totalkeys > self.maxkeys:
@@ -96,7 +96,7 @@ seqcount = dict()
 allmode = False
 
 for currsample in samples: 
-    maxseqs = 100000 
+    maxseqs = 10000000 
     seqcount[currsample] = prunedict()            
     total = 0
     for name, seq, qual in readmultifastq(sampledata.getfastq(currsample)):
@@ -104,20 +104,29 @@ for currsample in samples:
         total += 1
         #if total % 100000 == 0:
             #print >>sys.stderr, str(total)
-    if not allmode:        
-        seqcount[currsample].trim()
+    if not allmode:  
+        pass
+        #seqcount[currsample].trim()
 
 seqfile = open(sys.argv[2], "w")
 
 allseqs = defaultdict(int)
+totalreads = defaultdict(int)
+
 for currsample in samples:
     for currseq in seqcount[currsample].iterkeys():
         allseqs[currseq] += 1
-    
+        totalreads[currseq] += seqcount[currsample][currseq]
+
+maxmissing = 0
 print "\t".join(samples)    
 for i, currseq in enumerate(allseqs.iterkeys()):
     
-    if not allmode and allseqs[currseq] < len(samples):
+    if not allmode and (allseqs[currseq] < 2 or totalreads[currseq] < 40):   #allseqs[currseq] < len(samples)
+        
+        currmax = max(seqcount[currsample][currseq] for currsample in samples) 
+        if currmax > maxmissing:
+            maxmissing = currmax
         continue
     seqname = "frag"+str(i+1)+"_"+str(len(currseq))
     print seqname+"\t"+ "\t".join(str(seqcount[currsample][currseq]) for currsample in samples)

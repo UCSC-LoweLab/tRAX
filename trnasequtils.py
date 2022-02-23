@@ -463,6 +463,8 @@ class samplefile:
         return list(curr+ ".bam" for curr in self.samplelist)
     def getbam(self, sample):
         return self.bamdir + "/" + sample + ".bam" 
+    def getmergebam(self, sample):
+        return self.bamdir + "/" + sample + "-merge.bam" 
     def getfastq(self, sample):
         return self.samplefiles[sample]
     def getreplicatename(self, sample):
@@ -500,7 +502,7 @@ def getsizefactors( sizefactorfilename):
 #special class that uses the read indentifier for hashing in sets
 
 class GenomeRange:
-    __slots__ = "dbname", "chrom", "strand","name", "fastafile", "start", "end"
+    __slots__ = "dbname", "chrom", "strand","name", "fastafile", "start", "end", "data"
     def __eq__(self, other):
         return self.strand == other.strand and self.chrom == other.chrom and self.start == other.start and self.end == other.end
     def __hash__(self):
@@ -594,7 +596,10 @@ class GenomeRange:
             return self.data["seq"]
         else:
             return revcom(self.data["seq"])
-
+    def getgc(self):
+        seq = self.bamseq()
+        
+        return sum(1 if currbase in set(["G","C"]) else 0 for currbase in seq) 
 class GenomeRead(GenomeRange):
     def __eq__(self, other):
         return self.name == other.name
@@ -602,6 +607,7 @@ class GenomeRead(GenomeRange):
         return  hash(self.name)
     def __init__(*args, **nargs):
         GenomeRange.__init__(*args, **nargs)
+
 '''
 Still need to add trailer fragment code, both here and elsewhere
 '''
@@ -918,6 +924,11 @@ class BamRead(GenomeRange):
             return revcom(self.bamline.seq)
         else:
             return self.bamline.seq
+            
+    def getgc(self):
+        seq = self.getseq()
+        
+        return sum(1 if currbase in set(["G","C"]) else 0 for currbase in seq) 
     def issinglemapped(self):
         return self.bamline.mapq >= 2
     def getcigar(self):
@@ -1036,7 +1047,8 @@ def getnamedict(genelist):
         namedict[currgene.name] = currgene
     return namedict
         
-        
+class FastqSeqException(Exception):
+    pass
 def getseqs(fafile,rangedict, faindex = None):
     if faindex is not None:
         try:
@@ -1075,6 +1087,7 @@ def getseqs(fafile,rangedict, faindex = None):
                         pass
                     elif chromstart <= currloc < currloc + len(line) < chromend:
                         allseqs[currname] += line
+                
             currloc += len(line)
     genomefile.close()
     finalseqs = dict()
@@ -1089,6 +1102,9 @@ def getseqs(fafile,rangedict, faindex = None):
             finalseqs[currname] = allseqs[currname].upper()
     for currseq in rangedict.iterkeys():
         if currseq not in finalseqs:
+            #print >>sys.stderr, "**"
+            #print >>sys.stderr, fafile
+            
             print >>sys.stderr, "No sequence extracted for "+rangedict[currseq].dbname+"."+rangedict[currseq].chrom+":"+str(rangedict[currseq].start)+"-"+str(rangedict[currseq].end)
     return finalseqs        
     
@@ -1113,8 +1129,9 @@ class fastaindex:
     def getseek(self, currchrom,loc):
         #print >>sys.stderr, (self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
         if currchrom not in self.chromsize:
-            print >>sys.stderr, "sequence "+currchrom+" not found in index for "+self.fafile
-            sys.exit(1)
+            raise FastqSeqException("sequence "+currchrom+" not found in index for "+self.fafile)
+            #print >>sys.stderr, 
+            #sys.exit(1)
         return self.chromoffset[currchrom] + loc + int(loc/(self.seqlinesize[currchrom]))*(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
     def getfullseqs(self, names):
         genomefile = open(self.fafile, "r")
@@ -1129,19 +1146,24 @@ class fastaindex:
         genomefile = open(self.fafile, "r")
         allseqs = dict()
         for currname, currregion in rangedict.iteritems():
-            currchrom = currregion.chrom
-            #faskip = 
-            #print >>sys.stderr, int(currregion.start/(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom]))
-            genomefile.seek(self.getseek(currchrom,currregion.start))
-            seq = genomefile.read(self.getseek(currchrom,currregion.end) - self.getseek(currchrom,currregion.start))
-            seq = seq.replace("\n","")
-            allseqs[currname] = seq
-            #print >>sys.stderr, len(seq)
-            #print >>sys.stderr, str(currregion.end - currregion.start)
-            
+            try:
+                currchrom = currregion.chrom
+                #faskip = 
+                #print >>sys.stderr, int(currregion.start/(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom]))
+                genomefile.seek(self.getseek(currchrom,currregion.start))
+                seq = genomefile.read(self.getseek(currchrom,currregion.end) - self.getseek(currchrom,currregion.start))
+                seq = seq.replace("\n","")
+                allseqs[currname] = seq
+                #print >>sys.stderr, len(seq)
+                #print >>sys.stderr, str(currregion.end - currregion.start)
+            except FastqSeqException as e:
+                allseqs[currname] = None
+                pass
         genomefile.close()
         finalseqs = dict()
         for currname in allseqs.iterkeys():
+            if allseqs[currname] is None:
+                continue
             #print >>sys.stderr, currname
             #allseqs[currname] = allseqs[currname].upper()
             if (rangedict[currname].strand == "-"):

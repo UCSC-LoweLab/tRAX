@@ -58,34 +58,9 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 #   misc_RNA    #b2b2b2
 
 
-typepal <- c(
-  "other" = "#f2dab2",
-  "tRNA" = "#6666cc", 
-  "pretRNA" = "#a1ade5", 
-  "miRNA" = "#b4008d",
-  "snRNA" = "#74531d",
-  "Mt_tRNA" = "#87e275",
-  "Mt_rRNA" = "#00754a",
-  "rRNA" = "#a5e5d9",
-  "snoRNA" = "#ff9e18",
-  "misc_RNA" = "#b2b2b2"
-)
 #print(unique(countsmelt$seq))
 
-gg_color_hue <- function(n) {
-  hues = seq(15, 375, length = n + 1)
-  hcl(h = hues, l = 65, c = 100)[1:n]
-}
 
-extratypes = setdiff(unique(countsmelt$seq), names(typepal))
-extratypes = sort(extratypes)
-#print(extratypes)
-#print(unique(countsmelt$seq))
-#print(gg_color_hue(length(extratypes)))
-extracolors = setNames(gg_color_hue(length(extratypes)), extratypes)
-typepal = c(typepal, extracolors)
-    
-    
 
 
 ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
@@ -99,7 +74,7 @@ ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + th
     #scale_fill_ucscgb()+
     #scale_fill_brewer(palette = "Dark2")+
     #scale_fill_manual(values = getPalette(colourCount))+
-    scale_fill_manual(values = typepal)+
+    #scale_fill_manual(values = typepal)+
     theme(axis.title.x = element_text(face="bold", size=15), axis.text.x = element_text(face="bold", size=9,angle = 90, vjust = .5)) #+scale_colour_gradient() #+ scale_fill_brewer( palette="RdPu")
 
 ggsave(filename=args[2])

@@ -144,15 +144,22 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
         readtypecounts.addreadlengths(readlength)
         #readlengths[currsample][readlength] += 1
         #continue #point2
+        #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+        #    print >>sys.stderr, "**foundread"
         for currbed in trnaloci:
             for currfeat in trnaloci[currbed].getbin(currread):
                 expandfeat = currfeat.addmargin(30)
-                
-                if currfeat.coverage(currread) > 10 and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586"  and currfeat.name == "tRNA-Val-AAC-5-1":
+                #    print >>sys.stderr, "**trnaread:" +str(currfeat.coverage(currread))
+                #    print >>sys.stderr, "**trnaread:" +str(currfeat.coverage(currread))
+                if currfeat.coverage(currread) > 10: # and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                    #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+                    #    print >>sys.stderr, "**foundread:" +str(currfeat.name)
                     if currfeat.strand != currread.strand:
                         readtypecounts.addantilocuscounts(currbed)
                         break
-                    
+                    if (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                        pass
                     readtypecounts.addpretrnareadlengths(readlength)
                     readtypecounts.addtrnalocuscounts(currbed)
                     if currread.start + fullpretrnathreshold <  currfeat.start and currread.end - fullpretrnathreshold + 3 >  currfeat.end:
@@ -175,6 +182,8 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
                     readtypecounts.addtrnaantisense(currbed)
                     gotread = True
                     break
+        #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+        #    print >>sys.stderr, "**foundread2"            
         if gotread: 
             continue
         #continue #point3

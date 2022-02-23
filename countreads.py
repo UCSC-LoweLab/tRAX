@@ -46,7 +46,11 @@ class featurecount:
         self.aminocounts  = defaultdict(int)
         self.anticodoncounts =  defaultdict(int) 
         self.trnaendtypecounts = defaultdict(enddict)
+        self.lengthsum = defaultdict(int) 
+        self.lengthtotal = defaultdict(int) 
         
+        self.gcpercent = defaultdict(int) 
+        self.gctotal = defaultdict(int) 
         
         self.genetypes = dict()
         
@@ -84,7 +88,15 @@ class featurecount:
         if endtype is not None:
             self.trnaendtypecounts[featname][endtype] += 1
             
-            
+    def addreadlength(self, genename, length):
+       self.lengthsum[genename] += length
+       self.lengthtotal[genename] += 1
+       
+    def addgc(self, genename, gc, length):
+       self.gcpercent[genename] += gc
+       self.gctotal[genename] += length
+       
+       
     def getgenecount(self, genename):
        return self.counts[genename]
     def getantitrnacount(self, genename):
@@ -114,7 +126,16 @@ class featurecount:
        return self.trnawholecounts[genename]
     def getendtypecount(self, genename):
        return self.trnaendtypecounts[genename]
-
+    def getreadavglength(self, genename):
+        if self.lengthtotal[genename] == 0:
+            return 0
+        else:
+            return self.lengthsum[genename] / self.lengthtotal[genename]
+    def getreadavggc(self, genename):
+        if self.gctotal[genename] == 0:
+            return 0
+        else:
+            return self.gcpercent[genename] / self.gctotal[genename]
 
 def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = dict(),otherseqdict = dict(), embllist = list(), bedfiles = list(),nomultimap = False, allowindels = True, maxmismatches = None):
     samplecounts = featurecount(samplename, bamfile, trnas = trnalist, trnaloci = trnaloci, emblgenes = embllist, otherfeats = featurelist)
@@ -162,6 +183,8 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
                 for currread in getbamrange(bamfile, currfeat, singleonly = nomultimap, maxmismatches = maxmismatches,allowindels = allowindels):
                     if currfeat.coverage(currread) > 10:
                         samplecounts.addcount(currfeat.name)
+                        samplecounts.addreadlength(currfeat.name, currread.length())
+                        #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
                         samplecounts.setgenetype(currfeat.name,os.path.basename(currfile))
             except ValueError:
                 pass
@@ -173,6 +196,8 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
             for currread in getbamrange(bamfile, currfeat, singleonly = nomultimap, maxmismatches = maxmismatches,allowindels = allowindels):
                 #print >>sys.stderr, currfeat.name
                 samplecounts.addcount(currfeat.name)
+                samplecounts.addreadlength(currfeat.name, currread.length())
+                #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
                 samplecounts.setgenetype(currfeat.name,currtype)
     for genename, featset in itertools.groupby(embllist,lambda x: x.data["genename"]):
         #print >>sys.stderr, "**"
@@ -188,6 +213,8 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
                     if currfeat.coverage(currread) > 10:
                         
                         samplecounts.addcount(genename)
+                        samplecounts.addreadlength(currfeat.name, currread.length())
+                        #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
                         #print >>sys.stderr, "**"+currread.name
                         samplecounts.setgenetype(genename,currfeat.data["biotype"])
                         #print >>sys.stderr, currfeat.bedstring()
@@ -202,6 +229,8 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
             
             if currfeat.coverage(currread) > 10 and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
                 samplecounts.addlocuscount(currfeat.name)
+                samplecounts.addreadlength(currfeat.name, currread.length())
+                #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
                 if currread.start + fullpretrnathreshold <  currfeat.start and currread.end - fullpretrnathreshold + 3 >  currfeat.end:
                     samplecounts.addfulllocuscount(currfeat.name)
                 else:
@@ -219,8 +248,9 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
         
         featreads = 0
         for currread in getbam(bamfile, currfeat, singleonly = nomultimap, allowindels = allowindels):
-
-            if maxmismatches is not None and curread.mismatches() > maxmismatches:
+            samplecounts.addreadlength(currfeat.name, currread.length())
+            #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
+            if maxmismatches is not None and currread.mismatches() > maxmismatches:
                 continue
             featreads += 1
             if not currfeat.strand == currread.strand:
@@ -311,33 +341,40 @@ def printcountfile(countfile, samples,  samplecounts, trnalist, trnaloci, featur
             print >>countfile, genename+"\t"+"\t".join(str(samplecounts[currsample].getgenecount(genename)) for currsample in samples)
 
 
+def averagesamples(allcounts, genename,samples):
+    
+    return str(sum(allcounts[currsample].lengthsum[genename] for currsample in samples)/(.01+1.*sum(allcounts[currsample].lengthtotal[genename] for currsample in samples)))
+    
+def gcsamples(allcounts, genename,samples):
+        return str(sum(allcounts[currsample].gcpercent[genename] for currsample in samples)/(.01+1.*sum(allcounts[currsample].gctotal[genename] for currsample in samples)))
+
 def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist, embllist , otherseqdict = dict(),minreads = 5):
     trnanames = set()
     genetypes = dict()
+    genelengths = dict()
     for currsample in samples:
         genetypes.update(allcounts[currsample].genetypes)
-
     for currbed in featurelist.iterkeys():
         for currfeat in featurelist[currbed] :
             if currfeat.name in trnanames:
                 continue
             trnanames.add(currfeat.name)
             if max(allcounts[currsample].counts[currfeat.name] for currsample in samples) > minreads:
-                print >>genetypeout, currfeat.name+"\t"+genetypes[currfeat.name]   +"\t"+currfeat.chrom
+                print >>genetypeout, currfeat.name+"\t"+genetypes[currfeat.name]   +"\t"+currfeat.chrom+"\t"+averagesamples(allcounts, currfeat.name, samples)
     
         
     for currfeat in trnaloci:
-        print >>genetypeout, currfeat.name+"_wholeprecounts"+"\t"+"trna_wholeprecounts" +"\t"+currfeat.chrom
-        print >>genetypeout, currfeat.name+"_partialprecounts"+"\t"+"trna_partialprecounts"+"\t"+currfeat.chrom
-        print >>genetypeout, currfeat.name+"_trailercounts"+"\t"+"trna_trailercounts"+"\t"+currfeat.chrom
-        print >>genetypeout, currfeat.name+""+"\t"+"tRNA_locus"+"\t"+currfeat.chrom
+        print >>genetypeout, currfeat.name+"_wholeprecounts"+"\t"+"trna_wholeprecounts" +"\t"+currfeat.chrom +"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_partialprecounts"+"\t"+"trna_partialprecounts"+"\t"+currfeat.chrom+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_trailercounts"+"\t"+"trna_trailercounts"+"\t"+currfeat.chrom+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+""+"\t"+"tRNA_locus"+"\t"+currfeat.chrom+"\t"+averagesamples(allcounts, currfeat.name, samples)
     for currfeat in trnalist:
-        print >>genetypeout, currfeat.name+"_wholecounts"+"\t"+"trna_wholecounts"+"\t"+"tRNA"
-        print >>genetypeout, currfeat.name+"_fiveprime"+"\t"+"trna_fiveprime"+"\t"+"tRNA"
-        print >>genetypeout, currfeat.name+"_threeprime"+"\t"+"trna_threeprime"+"\t"+"tRNA"
-        print >>genetypeout, currfeat.name+"_other"+"\t"+"trna_other"+"\t"+"tRNA"
-        print >>genetypeout, currfeat.name+"_antisense"+"\t"+"trna_antisense"+"\t"+"tRNA"
-        print >>genetypeout, currfeat.name+""+"\t"+"tRNA"+"\t"+"tRNA"
+        print >>genetypeout, currfeat.name+"_wholecounts"+"\t"+"trna_wholecounts"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_fiveprime"+"\t"+"trna_fiveprime"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_threeprime"+"\t"+"trna_threeprime"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_other"+"\t"+"trna_other"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+"_antisense"+"\t"+"trna_antisense"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
+        print >>genetypeout, currfeat.name+""+"\t"+"tRNA"+"\t"+"tRNA"+"\t"+averagesamples(allcounts, currfeat.name, samples)
     
     for currfeat in embllist:
         genename = currfeat.data['genename']
@@ -348,7 +385,7 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
             #print >>sys.stderr, currfeat.name
             continue
         if max(allcounts[currsample].counts[genename] for currsample in samples) > minreads:
-            print >>genetypeout, genename+"\t"+genetypes[genename]        +"\t"+currfeat.chrom
+            print >>genetypeout, genename+"\t"+genetypes[genename]        +"\t"+currfeat.chrom+"\t"+averagesamples(allcounts, currfeat.name, samples)
     for currtype in otherseqdict.iterkeys():
         for currfeat in otherseqdict[currtype]:
             genename = currfeat.name
@@ -359,9 +396,10 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
                 #print >>sys.stderr, currfeat.name
                 continue
             if max(allcounts[currsample].counts[genename] for currsample in samples) > minreads:
-                print >>genetypeout, genename+"\t"+genetypes[genename]    +"\t"+currfeat.chrom         
+                print >>genetypeout, genename+"\t"+genetypes[genename]    +"\t"+currfeat.chrom +"\t"+averagesamples(allcounts, currfeat.name, samples)         
               
      
+
 def printtrnauniquecountcountfile(trnauniquefile,samples,  samplecounts, trnalist, trnaloci , minreads = 5):
     trnauniquefile = open(trnauniquefile, "w")
     print >>trnauniquefile, "\t".join(currsample for currsample in samples)
@@ -537,7 +575,6 @@ def testmain(**argdict):
     if genetypefile is not None:
         genetypeout = open(genetypefile, "w")
         printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist, embllist,otherseqdict = otherseqdict )
-    
     #it's currently not used, but here is where I could count by amino acid or anticodon
     if typefile:
         trnacountfile = open(trnacountfilename, "w")

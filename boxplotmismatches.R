@@ -327,10 +327,10 @@ ggsave(paste(directory,"/",expname,"-",curramino ,"_deletionheatmap",outputforma
 
 }
 
-print("||**||")
-print(positionorder)
+#print("||**||")
+#print(positionorder)
 for (currpos in positionorder){
-print(currpos)
+#print(currpos)
 poslabel = ifelse(currpos == "-1", "neg1", currpos)
 
 mismatchmelt = mismatches[mismatches$position == currpos,c("Feature","Sample","percentmismatch")]
@@ -349,7 +349,7 @@ next
 #print(head(fiveprimemelt))
 
 fiveprimeagg <- aggregate(fiveprimemelt$percentstart, by=list(Feature = fiveprimemelt$Feature, Sample = Sampletable[match(fiveprimemelt$Sample,Sampletable[,1]),2]), FUN=mean)
-print(head(fiveprimeagg))
+#print(head(fiveprimeagg))
 colnames(fiveprimeagg) <- c("Feature","Sample","percentstart")
 
 posname = paste(directory,"/",expname,"-",poslabel,"_possamplereadstarts",outputformat, sep = "")

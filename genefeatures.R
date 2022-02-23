@@ -25,7 +25,7 @@ countsmelt = melt(temp, id.vars = c('seq'))
 
 
 countsmelt = within(countsmelt, seq <- factor(seq, 
-    rev(rownames(selectcounts)), 
+    rownames(selectcounts), 
     ordered = FALSE))
 
 #head(countsmelt)
@@ -37,8 +37,7 @@ sampletotals = aggregate(countsmelt$value, list(countsmelt$variable), sum)
 #sampletotals$x[countsmelt$variable]
 #countsmelt = countsmelt[countsmelt$value > 100,]
 countsmelt = countsmelt[countsmelt$value > sampletotals$x[countsmelt$variable] / 100,]
-#countsmelt = countsmelt
-#head(countsmelt)
+
 
 #unique(countsmelt$seq)
 colourCount = length(unique(countsmelt$seq))+1
@@ -58,9 +57,7 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 #   snoRNA  #ff9e18
 #   misc_RNA    #b2b2b2
 
-
 typepal <- c(
-  "other" = "#f2dab2",
   "tRNA" = "#6666cc", 
   "pretRNA" = "#a1ade5", 
   "miRNA" = "#b4008d",
@@ -69,11 +66,29 @@ typepal <- c(
   "Mt_rRNA" = "#00754a",
   "rRNA" = "#a5e5d9",
   "snoRNA" = "#ff9e18",
-  "misc_RNA" = "#b2b2b2"
+  "misc_RNA" = "#b2b2b2",
+  "other" = "#f2dab2"
 )
-print(unique(countsmelt$seq))
 
 
+
+
+#print(typepal)
+
+
+#print(setdiff(unique(countsmelt$seq),names(typepal)))
+
+extragenes = setdiff(unique(countsmelt$seq),names(typepal))
+
+otherpal = getPalette(length(extragenes))
+
+names(otherpal) = extragenes
+
+#print(otherpal)
+    
+typepal = c(typepal, otherpal)
+
+#print(typepal)
 
 ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
 	geom_bar(position = "fill",stat="identity") +
