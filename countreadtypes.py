@@ -445,7 +445,8 @@ def printaminocounts(trnaaminofilename, sampledata,allcounts, sizefactor):
     replicates = list(sampledata.allreplicates())
     trnaaminofile = open(trnaaminofilename, "w")
     aminos = allaminos
-    #print >>sys.stderr, aminos
+    aminos = set().union(*list(allcounts[currsample].aminos for currsample in sampledata.getsamples()))
+    print >>sys.stderr, aminos
     print  >>trnaaminofile, "\t".join(replicates)
     for curramino in aminos:
         #print >>sys.stderr, curramino

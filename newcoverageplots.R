@@ -12,7 +12,7 @@ library(getopt)
 
 
 
-allaminos = c('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','iMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet') 
+allaminos = c('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Ile2','Leu','Lys','Met','iMet','fMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet') 
 
 expand.delimited <- function(x, col1=1, col2=2, sep=",") {
   rnum <- 1
