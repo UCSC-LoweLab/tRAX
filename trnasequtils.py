@@ -11,7 +11,7 @@ from distutils.spawn import find_executable
 
 from collections import defaultdict
 
-allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','iMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
+allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Ile2','Leu','Lys','Met','iMet','fMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
 
 def readmultifasta(fafile):
     #print chrom+":"+ chromstart+"-"+ chromendre
