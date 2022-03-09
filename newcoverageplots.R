@@ -145,7 +145,16 @@ combinescale = 3
 ggsave(filename=filename, smallcovsummary, width =combinescale*(.5+.75*length(unique(covdata$Sample))), height = combinescale*1,limitsize = FALSE)
 
 }
-																																#																																	#, expand = c(0.05, 0)
+makelocuscombplot <-  function(covdata, filename){
+
+smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = sortacceptor, order = as.numeric(sortacceptor)),width = 2, size = 2	) + facet_grid( ~ Sample, scales="free") +xlab("Position")+ geom_bar(stat="identity")+ ylab("Normalized Read Count") +   scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("X1","X37","X73"), labels=c("Start","anticodon","tail"),expand = c(0.05, .01)) +scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
+
+smallcovsummary <- configurecombine(smallcovsummary)
+
+combinescale = 3
+ggsave(filename=filename, smallcovsummary, width =combinescale*(.5+.75*length(unique(covdata$Sample))), height = combinescale*1,limitsize = FALSE)
+
+}																															#																																	#, expand = c(0.05, 0)
 
 
 
@@ -296,6 +305,9 @@ trnapositions = c('-1','1','2','3','4','5','6','7','8','9','10','11','12','13','
 #locuspositions = c("head30","head29","head28","head27","head26","head25","head24","head23","head22","head21","head20","head19","head18","head17","head16","head15","head14","head13","head12","head11","head10","head9","head8","head7","head6","head5","head4","head3","head2","head1",'0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','17a','18','19','20','20a','20b','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76',"tail1","tail2","tail3","tail4","tail5","tail6","tail7","tail8","tail9","tail10","tail11","tail12","tail13","tail14","tail15","tail16","tail17","tail18","tail19","tail20","tail21","tail22","tail23","tail24","tail25","tail26","tail27","tail28","tail29","tail30")
 
 locuspositions = c("head30","head29","head28","head27","head26","head25","head24","head23","head22","head21","head20","head19","head18","head17","head16","head15","head14","head13","head12","head11","head10","head9","head8","head7","head6","head5","head4","head3","head2","head1",'0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','17a','18','19','20','20a','20b','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76',"tail1","tail2","tail3","tail4","tail5","tail6","tail7","tail8","tail9","tail10","tail11","tail12","tail13","tail14","tail15","tail16","tail17","tail18","tail19","tail20","tail21","tail22","tail23","tail24","tail25","tail26","tail27","tail28","tail29","tail30")
+
+
+#locuspositions = c("-30","-29","-28","-27","-26","-25","-24","-23","-22","-21","-20","-19","-18","-17","-16","-15","-14","-13","-12","-11","-10","-9","-8","-7","-6","-5","-4","-3","-2","-1",'0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','17a','18','19','20','20a','20b','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76',"+1","+2","+3","+4","+5","+6","+7","+8","+9","+10","+11","+12","+13","+14","+15","+16","+17","+18","+19","+20","+21","+22","+23","+24","+25","+26","+27","+28","+29","+30")
 
 opt = getopt(spec);
 
@@ -463,7 +475,7 @@ coveragemelt <- coverageprep(coveragemeltagg, samples, trnatable)
 
 acceptorType = trnatable[match(coveragemelt$Feature, trnatable[,1]),3]
 
-allaminos
+
 
 #acceptorType <- factor(acceptorType, levels = sort(unique(acceptorType)))
 acceptorType <- factor(acceptorType, levels = allaminos)
@@ -749,12 +761,19 @@ locicoveragesagg <- aggregate(locicoverages$coverage, by=list(Feature = locicove
 colnames(locicoveragesagg)[colnames(locicoveragesagg) == "x"]  <- "value"
 locicoveragesagg$Sample <- factor(locicoveragesagg$Sample,levels = unique(sampletable[,2]), ordered = TRUE)
 
+
+
+
+
 locicoveragesagg = locicoveragesagg[locicoveragesagg$variable %in% locuspositions,]
 locicoveragesagg$variable = factor(locicoveragesagg$variable, levels=locuspositions)
 
 
-#print(unique(locicoveragesagg$variable))
+print(unique(locicoveragesagg$variable))
+print("**")
 #factor
+
+oldpos = unique(locicoveragesagg$variable)
 
 locicoverages <- locicoveragesagg
 
@@ -765,15 +784,30 @@ locicoverages <- locicoveragesagg
 locustable = expand.delimited(trnatable,3,2)
 acceptorType = locustable[match(locicoverages$Feature, locustable[,2]),1]
 
-sortcovmelt <- coveragemelt[order(locicoverages$variable, locicoverages$Sample,as.numeric(acceptorType),locicoverages$Feature),]  
+
+acceptorType <- factor(acceptorType, levels = allaminos)
+#sortacceptor <- acceptorType[order(locicoverages$variable, locicoverages$Sample,-as.numeric(locicoverages$Feature))]
+
+
+sortcovmelt <- locicoverages[order(locicoverages$variable, locicoverages$Sample,as.numeric(acceptorType),locicoverages$Feature),]  
 sortacceptor <- acceptorType[order(locicoverages$variable, locicoverages$Sample,as.numeric(acceptorType),locicoverages$Feature)]
 
+#print(unique(sortcovmelt$variable))
 
+#print(setdiff(oldpos, levels(sortcovmelt$variable)))
 
-covsummary <- ggplot(sortcovmelt,aes(x=variable,y=value, fill = sortacceptor, order = as.numeric(sortacceptor))) + facet_grid( ~ Sample, scales="free") +xlab("Position")+ geom_bar(stat="identity")+theme_bw()+theme(axis.text.y=element_text(colour="black",size=8), strip.text.y = element_text(angle=0,size=4),strip.text.x = element_text(angle=0,size=8),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8))+ ylab("Read Share") +   scale_y_continuous(breaks=myBreaks, labels = c("0","1")) +scale_x_discrete(breaks=c("1","13","22","31","39","53","61","73"), labels=c("Start","D-loop start","D-loop end","AC-loop start","AC-loop end","T-loop start","T-loop end","tail")) +scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
+#print(setdiff(levels(sortcovmelt$variable), oldpos))
+#print("***")
+#print(head(acceptorType))
+#print(allaminos)
+#print(unique(sortacceptor))
+#print(unique(locicoverages$Sample))
+#print(unique(sortcovmelt$variable))
+
 locuscombinedname = paste(opt$directory,"/pretRNAs/",runname,"-pretRNAcombinedcoverage.pdf", sep = "")
-
-ggsave(filename=locuscombinedname,covsummary)
+makelocuscombplot(sortcovmelt, locuscombinedname) 
+#covsummary <- ggplot(sortcovmelt,aes(x=variable,y=value, fill = sortacceptor, order = as.numeric(sortacceptor))) + facet_grid( ~ Sample, scales="free") +xlab("Position")+ geom_bar(stat="identity")+theme_bw()+theme(axis.text.y=element_text(colour="black",size=8), strip.text.y = element_text(angle=0,size=4),strip.text.x = element_text(angle=0,size=8),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8))+ ylab("Read Share") +   scale_y_continuous(breaks=myBreaks, labels = c("0","1")) +scale_x_discrete(breaks=c("1","13","22","31","39","53","61","73"), labels=c("Start","D-loop start","D-loop end","AC-loop start","AC-loop end","T-loop start","T-loop end","tail")) +scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
+#ggsave(filename=locuscombinedname,covsummary)
 #print("***||&&")
 allmultmelt <- sortcovmelt
 

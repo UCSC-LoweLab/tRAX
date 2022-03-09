@@ -6,6 +6,12 @@ library(RColorBrewer)
 
 args <- commandArgs(trailingOnly = TRUE)
 
+outtype = ""
+if(length(args) > 2){
+outtype = args[3]
+}
+
+
 #args <- c("hg19-genomictrailertable.txt","hg19-genomicbarplot.png")
 #args =c("repfragtypenormcounts.txt","barplot.png")
 
@@ -35,7 +41,11 @@ sampletotals = aggregate(countsmelt$value, list(countsmelt$variable), sum)
 
 #sampletotals$x[countsmelt$variable]
 #countsmelt = countsmelt[countsmelt$value > 100,]
+countsmelt = countsmelt[countsmelt$value > 0,]
+
+if(outtype != "all"){
 countsmelt = countsmelt[countsmelt$value > sampletotals$x[countsmelt$variable] / 100,]
+}
 #countsmelt = countsmelt
 #head(countsmelt)
 
