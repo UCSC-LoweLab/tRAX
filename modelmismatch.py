@@ -833,7 +833,7 @@ def main(**argdict):
     repgroups = getreplicates(mismatchlocs, trnainfo,sampleinfo)
     createcombinedtable(outfile, covcounts, repgroups,minreads = minreads, skipmatches = False,shufflemode = False, drawmode = False)
     outfile.close()
-    sys.exit()
+    #sys.exit()
     
     outfile = open(runname+"-repcompare.txt","w")
     pairgroup = getreplicates(mismatchlocs, trnainfo,sampleinfo)
