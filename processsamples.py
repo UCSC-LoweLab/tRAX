@@ -247,14 +247,14 @@ def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  i
     runrscript(scriptdir+"/readlengthhistogram.R",expinfo.trnalengthfile,samplefile,expinfo.trnalengthplot)
     runrscript(scriptdir+"/plotreadmismatches.R",expinfo.mismatchcountfile,expinfo.mismatchcountplot)
         
-def gettrnacoverage(samplefile, trnainfo,expinfo, bamdir = "./",  orgtype = "euk",ignoresizefactors = False, cores = 8):
+def gettrnacoverage(samplefile, trnainfo,expinfo, bamdir = "./",  orgtype = "euk",ignoresizefactors = False, cores = 8, mincoverage = None):
     #print >>sys.stderr, orgtype
     if not ignoresizefactors:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign, bamdir = bamdir, lociedgemargin=30,sizefactors=expinfo.sizefactors,orgtype = orgtype,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, numfile=trnainfo.trnanums, locinums = trnainfo.locinums,allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign, bamdir = bamdir, lociedgemargin=30,sizefactors=expinfo.sizefactors,orgtype = orgtype,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, numfile=trnainfo.trnanums, locinums = trnainfo.locinums,allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")
     else:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname,orgtype = orgtype, bamdir = bamdir, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname,orgtype = orgtype, bamdir = bamdir, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")

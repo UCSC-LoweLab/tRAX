@@ -402,7 +402,7 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
     for currfeat in trnalist:
         #print >>sys.stderr, samplecoverages[list(samples)[0]].allcoverages.keys()
         totalreads = sum(samplecoverages[currsample].allcoverages[currfeat.name].totalreads for currsample in samples)
-        ambigreads = sum(samplecoverages[currsample].allcoverages[currfeat.name].multaminocoverages for currsample in samples)
+        ambigreads = sum(samplecoverages[currsample].multaminocoverages[currfeat.name].totalreads for currsample in samples)
         if totalreads - ambigreads < mincoverage:
             continue
         reportpositions = set()  
@@ -630,7 +630,7 @@ def testmain(**argdict):
     else:
         edgemargin = int(argdict["edgemargin"])
     #currently crashes if set to zero
-    if "mincoverage" not in  argdict:
+    if "mincoverage" not in  argdict or argdict["mincoverage"] is None:
         mincoverage = 30
     else:
         mincoverage = int(argdict["mincoverage"])  
