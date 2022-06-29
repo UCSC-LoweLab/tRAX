@@ -56,7 +56,13 @@ from scipy.spatial.distance import euclidean
 gapchars = set("-._~")
 positions = list(str(curr) for curr in list([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]))
 
-
+def readpairfile(filename):
+    samplepairs = list()
+    for currline in open(filename):
+        fields = currline.split()
+        if len(fields) > 1:
+            samplepairs.append(tuple([fields[0],fields[1]]))
+    return samplepairs
 
 def readclusterfile(filename):
     trnaclusts = defaultdict(set)
@@ -245,9 +251,14 @@ def hellingercounts(firset, secset, pcounts = .01):
     return hellingerdistance(firprobs, secprobs)
 
 class covaggregate:
-    def __init__(self, covpos, covlines):
+    def __init__(self, covpos, covlines, orignum = None):
         self.covpos = covpos
         self.covlines = covlines
+        self.orignum = orignum
+    def isfullset(self):
+        return self.orignum is not None and self.orignum == len(self.covlines)
+    def getorignum(self):
+        return self.orignum
     def posnum(self):
         return len(self.covlines)
     def combinebaseprobs(self):
@@ -389,7 +400,7 @@ class covdata:
     def combineposset(self, covposlist, cutoff = 0):
                 
         covpos = list(curr for curr in covposlist if self.covdict[curr].totalcounts() >= cutoff)
-        return covaggregate(covpos, list(self.covdict[curr] for curr in covpos)) 
+        return covaggregate(covpos, list(self.covdict[curr] for curr in covpos), orignum = len(covposlist)) 
             
     def comparesampleset(self, firsamples, secsamples, covposlist):
         
@@ -663,7 +674,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
            #print freqcounts.freqlists
 
             
-def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, skipmatches = True, shufflemode = False, drawmode = False):
+def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, pairfile = None,skipmatches = True, shufflemode = False, drawmode = False):
     allclusters = set()
     totalcounted = 0
     skipunique = 0
@@ -686,9 +697,10 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, skipmatche
         currpos = poslist[0]
         #print >>sys.stderr, groupname
         currinfo =  covcounts.combineposset(posset, cutoff = 50)
-        
         if currinfo.posnum() < 1:
             continue
+        #if currinfo.posnum() < 2 or currinfo.isfullset(): #testing here how many replicates you need
+            #p
         baseinfo = currinfo.combinebaseprobs()
         #print >>sys.stderr,   currinfo.basecounts()
         posinfo[tuple([currtrna,currpos,currsample])] = currinfo
@@ -700,11 +712,14 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, skipmatche
             pass
             #print >>outfile, "\t".join([groupname,currsample,currtrna,currpos,",".join(str(curr) for curr in currset.basecounts())])
     #print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"])
-    print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","fircounts","secname","secpercent","seccounts","bdist"])
-    
+    print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","firsamples","fircounts","secname","secpercent","secsamples","seccounts","bdist"])
+    if pairfile is not None:
+        allpairs = readpairfile(pairfile)
     for currtrna in alltrnas:
         for currpos in allpos:
-            for firsample, secsample in itertools.combinations(allsamples, 2):
+            if pairfile is None:
+                allpairs = itertools.combinations(allsamples, 2)
+            for firsample, secsample in allpairs:
                 #print >>sys.stderr, "**"+currtrna+":"+currpos+":"+firsample
                 if tuple([currtrna,currpos,firsample]) not in posinfo or tuple([currtrna,currpos,secsample]) not in posinfo:
                     continue
@@ -712,7 +727,7 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, skipmatche
                 #print >>sys.stderr, "**"
                 firdata = posinfo[tuple([currtrna,currpos,firsample])]
                 secdata = posinfo[tuple([currtrna,currpos,secsample])]
-                print >>outfile, "\t".join([currtrna+"_pos"+currpos,firsample,currtrna,currpos,str(firdata.refbase()),str(firdata.combineidentity()),",".join(str(curr) for curr in firdata.basecounts()),secsample ,str(secdata.combineidentity()),",".join(str(curr) for curr in secdata.basecounts()),str(bhattacharyyadistance(firdata.basecounts(), secdata.basecounts()))])             
+                print >>outfile, "\t".join([currtrna+"_pos"+currpos,firsample,currtrna,currpos,str(firdata.refbase()),str(firdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in firdata.basecounts()),secsample ,str(secdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in secdata.basecounts()),str(bhattacharyyadistance(firdata.basecounts(), secdata.basecounts()))])             
              
 
     
@@ -720,6 +735,7 @@ def main(**argdict):
     covfile = argdict["covfile"]
     skipmatches = argdict["skipperfect"]
     runname = argdict["runname"]
+    pairfile = argdict["pairfile"]
     minreads = 50
     if argdict["minreads"] is not None:
         minreads = int(argdict["minreads"])
@@ -831,7 +847,7 @@ def main(**argdict):
     
     outfile = open(runname+"-samplecomparepair.txt","w")
     repgroups = getreplicates(mismatchlocs, trnainfo,sampleinfo)
-    createcombinedtable(outfile, covcounts, repgroups,minreads = minreads, skipmatches = False,shufflemode = False, drawmode = False)
+    createcombinedtable(outfile, covcounts, repgroups,minreads = minreads, pairfile = pairfile, skipmatches = False,shufflemode = False, drawmode = False)
     outfile.close()
     #sys.exit()
     
@@ -888,6 +904,8 @@ if __name__ == "__main__":
                        help='run name')
     parser.add_argument('--minreads',
                        help='minimum reads')
+    parser.add_argument('--pairfile',
+                       help='pair file')
     parser.add_argument('--skipperfect', action="store_true", default=False,
                        help='skip perfect matches to reference base')
     args = parser.parse_args()

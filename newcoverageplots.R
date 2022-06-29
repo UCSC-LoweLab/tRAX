@@ -107,6 +107,30 @@ ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(cov
 
 
 
+makeendplot <-  function(covdata, filename){
+
+#show_col(hue_pal()(4))
+
+uniquecols <- c("Read Starts" = "#C77CFF", "Read ends" = "#00BEC4","Coverage" = "#7CAE00")
+
+
+allsamples = unique(covdata$Sample)
+allfeatures = unique(covdata$Feature)
+print("**")
+
+covdata$endtype = factor(covdata$endtype,levels = c("Coverage","Read Starts", "Read ends"))
+
+
+#print("**||")
+ #+scale_fill_manual(values = uniquecols)
+coverage   <- ggplot(covdata,aes(x=position,y=value, fill = endtype, order=-as.numeric(endtype)), size = 2) + expand_limits(y = 50)+ theme_bw()+facet_grid(Feature ~ Sample, scales="free") + geom_bar(stat="identity") +  geom_vline(aes(xintercept = dist, col = Modification),data = aminomodomicstable,show.legend=TRUE,size=.2,linetype = "longdash")+theme(axis.text.y=element_text(colour="black",size=6),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8)) + ylab("Normalized Read Count") + xlab("tRNA position") + scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("1","13","22","31","39","53","61","73"), labels=c("Start","D-loop start","D-loop end","AC-loop start","AC-loop end","T-loop start","T-loop end","tail")) + labs(fill="Mappability", vline="RNA\nModification") #+ scale_color_hue("mod")+labs(fill="RNA\nModification")#+scale_fill_manual(name="RNA\nmodifications")#+scale_colour_manual(data = aminomodomicstable, name="RNA\nModification") #+scale_x_discrete(breaks=c("1","37","73"), labels=c("Start","anticodon", "tail"))
+
+coverage <- configurecov(coverage)
+
+ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(covdata$Feature))),width=scalefactor*(2+5*length(unique(covdata$Sample))), limitsize=FALSE, dpi = 600)
+
+}
+
 
 makepercentcovplot <-  function(covdata, filename){
 
@@ -485,6 +509,26 @@ sortacceptor <- acceptorType[order(coveragemelt$variable, coveragemelt$Sample,-a
 endsmeltagg  <- aggregate(coverageall$readstarts, by=list(Feature = coverageall$Feature, Sample = sampletable[match(coverageall$Sample,sampletable[,1]),2], variable = coverageall$position), FUN=mean)
 endsmelt <- coverageprep(endsmeltagg, samples, trnatable)
 
+#endsmeltagg  <- aggregate(coverageall$readstarts, by=list(Feature = coverageall$Feature, Sample = sampletable[match(coverageall$Sample,sampletable[,1]),2], variable = coverageall$position), FUN=mean)
+#endsmelt <- coverageprep(endsmeltagg, samples, trnatable)
+
+
+ 
+print(coverageall$readstarts)
+readends  = cbind(coverageall$readstarts, coverageall$readends, coverageall$coverage - (coverageall$readstarts + coverageall$readends))
+
+colnames(readends) =  c("Read Starts", "Read ends","Coverage")
+
+readsmeltagg  <- aggregate(readends, by=list(Feature = coverageall$Feature, Sample = sampletable[match(coverageall$Sample,sampletable[,1]),2], variable = coverageall$position), FUN=mean)
+readsmelt <- coverageprep(readsmeltagg, samples, trnatable)
+
+#print(head(readsmelt))
+
+allreadsmelt = melt(readsmelt, id.vars = c("Feature", "Sample", "variable"))
+
+
+colnames(allreadsmelt) =  c("Feature", "Sample","position","endtype","value")
+#print(head(allreadsmelt))
 pcount = 30
 
 
@@ -694,6 +738,8 @@ deletemelt$Feature = factor(as.character(deletemelt$Feature), levels = featnames
 #q()
 #print("**||2")
 #amino specific plots
+
+#print(head(allmultmelt))
 for (curramino in unique(acceptorType)){
 
 aminodata = allmultmelt[acceptorType == curramino,]
@@ -708,6 +754,15 @@ makecovplot(aminodata,aminonamesec)
 aminoendsdata = endsmelt[acceptorType == curramino,]
 aminonamesec = paste(opt$directory,"/mismatch/",runname, "-",curramino,"_fiveprimeends",outputformat,sep= "")
 makebasiccovplot(aminoendsdata,aminonamesec)
+
+
+readsmeltdata = allreadsmelt[acceptorType == curramino,]
+print(head(readsmeltdata))
+readsnamesec = paste(opt$directory,"/",runname, "-",curramino,"_endplot",outputformat,sep= "")
+
+makeendplot(readsmeltdata,readsnamesec)
+
+
 
 
 aminomismatchdata = mismatchesmelt[acceptorType == curramino,]

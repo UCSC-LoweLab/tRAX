@@ -257,7 +257,11 @@ displayfeats = ifelse(abs(currsampledata$currlogval) > 1.5 & currsampledata$curr
 #print(head(currsampledata))
 #currsampledata = currsampledata[currsampledata$currprob > .005,]
 #print(head(currsampledata))
-currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+#print(currcomp[[1]])
+#print(currcomp[[2]])
+currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+
+
 ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
 
 trnasampledata = currsampledata[grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE),]
@@ -268,7 +272,7 @@ trnapvalcutoff = sort(trnasampledata$currprob)[10]
 trnadisplayfeats = ifelse(abs(trnasampledata$currlogval) > 1.5 & trnasampledata$currprob < trnapvalcutoff, as.character(trnasampledata$genename), "")
 
 
-currplot <- ggplot(trnasampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+currplot <- ggplot(trnasampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
 ggsave(paste(experimentname,"/",pairname ,"-volcano_tRNA",outputformat,sep= ""), currplot) 
 
 }

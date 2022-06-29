@@ -262,8 +262,11 @@ class RnaAlignment(alignment):
         for curr in self.aligns.iterkeys():
             newseqs[curr] =  length*"N" + self.aligns[curr]+ length*"N"
         newstruct = length * ":" + self.currstruct + length * ":"
-
-        return RnaAlignment(newseqs, newstruct)
+        if self.consensus is None:
+            newconsensus = None
+        else:
+            newconsensus  =   length*"N" + self.consensus+ length*"N"
+        return RnaAlignment(newseqs, newstruct, consensus = newconsensus)
 
     def viennaformat(self):
         output = ""
@@ -310,8 +313,11 @@ def readrnastk(stk):
     for line in stk:
         line = line.rstrip()
         if line.startswith("//"):
+            #print >>sys.stderr, "||||||||||||||||||"
+            #print >>sys.stderr, consensus
             if consensus == "":
                 consensus = None
+            #print >>sys.stderr, consensus
             yield RnaAlignment(seqs, struct, consensus = consensus)
             seqs = defaultdict(str)
             struct = ""
@@ -324,9 +330,19 @@ def readrnastk(stk):
         elif line.startswith("#=GC SS_cons"):
             struct += line.split()[2]
         elif line.startswith("#=GC RF"):
+            #print >>sys.stderr, "********************"
+            #
+            #print >>sys.stderr, line.split()[2]
+            #print >>sys.stderr, "#############################"
             consensus += line.split()[2]
             
-
+def uniqueorder(inp):
+    
+    alldata = set()
+    for curr in inp:
+        if curr not in alldata:
+            yield curr
+            alldata.add(curr)
 class transcriptfile:
     def __init__(self, trnafilename):
         trnafile = open(trnafilename)
@@ -336,6 +352,8 @@ class transcriptfile:
         amino = dict()
         anticodon = dict()
         transcriptdict = defaultdict(set)
+        aminoorder = list()
+        anticodonorder = list()
         for i, line in enumerate(trnafile):
             fields = line.split()
             if len(fields) < 2:
@@ -343,6 +361,8 @@ class transcriptfile:
             trnatranscripts.append(fields[0])
             amino[fields[0]] = fields[2]
             anticodon[fields[0]] = fields[3]
+            aminoorder.append(fields[2])
+            anticodonorder.append(fields[3])
             for currlocus in fields[1].split(','):
                 locustranscript[currlocus] = fields[0]
                 loci.append(currlocus)
@@ -355,6 +375,9 @@ class transcriptfile:
         self.anticodon = anticodon
         self.transcriptdict = transcriptdict
         self.loci = loci
+        
+        self.aminoorder = tuple(uniqueorder(aminoorder))             
+        self.anticodonorder = tuple(uniqueorder(anticodonorder))
     def gettranscripts(self):
         return set(self.transcripts)
     def getlocustranscript(self, locus):
@@ -367,9 +390,9 @@ class transcriptfile:
         return  self.anticodon[trna]
         
     def allaminos(self):
-        return  set(self.amino.values())
+        return  self.aminoorder
     def allanticodons(self):
-        return  set(self.anticodon.values())
+        return  self.anticodonorder
     def getaminotranscripts(self, trnaamino):
         return  set(curr for curr in self.transcripts if trnaamino == self.amino[curr])
     def getanticodontranscripts(self, trnaanticodon):
@@ -760,8 +783,11 @@ def isprimarymapping(mapping):
 def issinglemapping(mapping):
     return mapping.mapq > 2
     
+def mismatchnum(mapping):
+    return int(mapping.get_tag("XM"))
+    
 def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleonly = False, maxmismatches = None, allowindels=True, skiptags = False):
-    bamiter = None
+
     try:
         if chromrange is not None:
             bamiter = bamfile.fetch(chromrange.chrom, chromrange.start, chromrange.end)
@@ -775,6 +801,8 @@ def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleo
             if singleonly and not issinglemapping(currline):
                 continue
             if not allowindels and len(currline.cigar) > 1:
+                continue
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
                 continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
@@ -789,19 +817,28 @@ def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleo
             pass
 def getbamrangeshort(bamfile, chromrange = None, primaryonly = False, singleonly = False, maxmismatches = None, allowindels=True, skiptags = False):
     bamiter = None
+    bamiter = None
+
     try:
         if chromrange is not None:
             bamiter = bamfile.fetch(chromrange.chrom, chromrange.start, chromrange.end)
         else:
             bamiter = bamfile.fetch()
    
-        for currline in bamiter: 
+        for currline in bamiter:
+            #if mismatchnum(currline) > maxmismatches:
+            #    print >>sys.stderr, "*|*"
+            #    print >>sys.stderr, maxmismatches
+            #    print >>sys.stderr, mismatchnum(currline)
             if primaryonly and not isprimarymapping(currline):
                 continue
 
             if singleonly and not issinglemapping(currline):
                 continue
             if not allowindels and len(currline.cigar) > 1:
+                continue
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
+                #print >>sys.stderr, "skipped"
                 continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
@@ -827,12 +864,19 @@ def getbamrange(bamfile, chromrange = None, primaryonly = False, singleonly = Fa
             bamiter = bamfile.fetch()
    
         for currline in bamiter:
+            
+            #if mismatchnum(currline) > maxmismatches:
+            #    print >>sys.stderr, "**"
+            #    print >>sys.stderr, maxmismatches
+            #    print >>sys.stderr, mismatchnum(currline)
             if primaryonly and not isprimarymapping(currline):
                 continue
 
             if singleonly and not issinglemapping(currline):
                 continue
-           
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
+                #print >>sys.stderr, "skipped"
+                continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
             strand = ifelse(currline.is_reverse, '-','+')

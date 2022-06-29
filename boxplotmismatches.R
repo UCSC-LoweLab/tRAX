@@ -205,6 +205,7 @@ currplot = ggplot(fiveprimeaminoposagg,aes(x = Sample, y = x,fill = Position, st
     geom_bar(position = "fill",stat="identity",color="black",show.legend=FALSE) + 
     scale_y_continuous(labels = percent_format()) +
     theme(axis.text.x = element_text(size=5))+
+    ggtitle(paste(curramino, " Five-prime ends", sep = "")) +
     xlab("Sample") +
     ylab("Percentage of reads that start at position") + 
     labs(fill="position")+
@@ -231,8 +232,9 @@ currplot = ggplot(threeprimeaminoposagg,aes(x = Sample, y = x,fill = Position, s
     scale_y_continuous(labels = percent_format()) +
     theme(axis.text.x = element_text(size=5))+
     xlab("Sample") +
-    ylab("Percentage of reads that start at position") + 
+    ylab("Percentage of reads that end at position") + 
     labs(fill="position")+
+    ggtitle(paste(curramino, " Three-prime ends", sep = "")) +
     #scale_fill_ucscgb()+
     #scale_fill_brewer(palette = "Dark2")+
     scale_fill_manual(values = getPalette(colourCount))+

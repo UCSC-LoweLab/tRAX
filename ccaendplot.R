@@ -20,6 +20,7 @@ spec <- matrix(c(
         'samples'    , 's', 1, "character", "Sample file (required)",
         'trna'     , 't', 1, "character", "trna file (required)",
         'directory'     , 'd', 1, "character", "output directory (required)",
+        'runname'     , 'r', 1, "character", "run name",        
         'help'   , 'h', 0, "logical",   "this help"
 ),ncol=5,byrow=T)
 
@@ -33,7 +34,7 @@ ccapseudocount = .1
 ends <- read.table(opt$ends, header = TRUE,row.names = NULL, stringsAsFactors=FALSE)
 Sampletable <- read.table(opt$samples)
 trnatable <- read.table(opt$trna)                                    
-
+runname = opt$runname
 directory <- opt$directory
 
 
@@ -91,7 +92,7 @@ tailmeltagg$tails = factor(tailmeltagg$tails, levels = c("Trimmed","C","CC","CCA
 #print(tailmeltagg[tailmeltagg$sample == "Brain_plusAlkB_plusPNK2x",])
 
 
-posname = paste(directory,"/","trnatails",outputformat, sep = "")  #+ facet_wrap(~amino, scale="free")  #geom_jitter( size = dotsize,width = 0.25) 
+posname = paste(directory,"/",runname,"-trnatails",outputformat, sep = "")  #+ facet_wrap(~amino, scale="free")  #geom_jitter( size = dotsize,width = 0.25) 
 ggplot(data = tailmeltagg, aes(x=tails, y=percentage,colour = sample,fill=sample)) + geom_boxplot()+theme_bw() +  scale_y_continuous(labels = percent_format(),limits=c(0,1)) +  ggtitle(paste("tRNA tails", sep = ""))+ theme(axis.text.x = element_text(angle = 90, hjust = 1))+ xlab("Tail")+ylab("Percent")
 #print(head(tailmeltagg))
 #print(tailmeltagg)

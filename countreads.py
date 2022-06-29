@@ -191,7 +191,6 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
 
     #extra sequences built during database creation (experimental)
     for currtype in otherseqdict.iterkeys():
-        print >>sys.stderr, "**"+currtype
         for currfeat in otherseqdict[currtype]:
             for currread in getbamrange(bamfile, currfeat, singleonly = nomultimap, maxmismatches = maxmismatches,allowindels = allowindels):
                 #print >>sys.stderr, currfeat.name
@@ -248,10 +247,11 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
         
         featreads = 0
         for currread in getbam(bamfile, currfeat, singleonly = nomultimap, allowindels = allowindels):
-            samplecounts.addreadlength(currfeat.name, currread.length())
             #samplecounts.addgc(currfeat.name, currread.getgc(), currread.length())
-            if maxmismatches is not None and currread.mismatches() > maxmismatches:
+            if maxmismatches is not None and currread.getmismatches() > maxmismatches:
                 continue
+            samplecounts.addreadlength(currfeat.name, currread.length())
+
             featreads += 1
             if not currfeat.strand == currread.strand:
                 samplecounts.addantitrnacount(currfeat.name)
@@ -269,9 +269,10 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
             endtype = getendtype(currfeat, currread)
             #print >>sys.stderr, endtype
             samplecounts.addendcount(currfeat.name, endtype)
-
-            if currread.isuniqueaminomapping():
+            if currread.isuniquetrnamapping():
                 samplecounts.adduniquecount(currfeat.name)
+            if currread.isuniqueaminomapping():
+                pass
             if not currread.isuniqueaminomapping():
                 pass
             elif currread.isuniqueacmapping():
@@ -456,7 +457,10 @@ def testmain(**argdict):
     removepseudo = argdict["removepseudo"]
     ensemblgtf = argdict["ensemblgtf"]
     nomultimap = argdict["nomultimap"]
-    maxmismatches = argdict["maxmismatches"]
+    if argdict["maxmismatches"] is not None:
+        maxmismatches = int(argdict["maxmismatches"])
+    else:
+        maxmismatches = None
     cores = argdict["cores"]
     trnaendfilename = argdict["trnaends"]
     threadmode = True
@@ -488,7 +492,6 @@ def testmain(**argdict):
     trnacountfilename = argdict["trnacounts"]
 
     
-    trnacountfilename = argdict["trnacounts"]
     trnainfo = transcriptfile(trnatable)
 
     #print >>sys.stderr, bedfiles
@@ -544,6 +547,11 @@ def testmain(**argdict):
     threads = dict()
     #threadmode = False
     starttime = time.time()
+    #print  list(curr.name for curr in trnalist)
+    print >>sys.stderr, "**||"
+    print >>sys.stderr, maxmismatches
+    
+    #sys.exit()
     if threadmode:
 
         countpool = Pool(processes=cores)
@@ -605,7 +613,7 @@ def testmain(**argdict):
         pass
 
 
-def main(**argdict):
+def oldmain(**argdict):
     trnauniquefilename = None
     argdict = defaultdict(lambda: None, argdict)
     includebase = argdict["nofrag"]
@@ -614,7 +622,7 @@ def main(**argdict):
     removepseudo = argdict["removepseudo"]
     ensemblgtf = argdict["ensemblgtf"]
     nomultimap = argdict["nomultimap"]
-    maxmismatches = argdict["maxmismatches"]
+    maxmismatches = int(argdict["maxmismatches"])
     typefile = None
     sampledata = samplefile(argdict["samplefile"])
     bedfiles = list()
@@ -947,5 +955,5 @@ if __name__ == "__main__":
     #main(samplefile=args.samplefile, bedfile=args.bedfile, gtffile=args.bedfile, ensemblgtf=args.ensemblgtf, trnaloci=args.trnaloci, onlyfullpretrnas=args.onlyfullpretrnas,removepseudo=args.removepseudo,genetypefile=args.genetypefile,trnacounts=args.trnacounts,maturetrnas=args.maturetrnas,nofrag=args.nofrag,nomultimap=args.nomultimap,maxmismatches=args.maxmismatches)
     argvars = vars(args)
     #argvars["countfile"] = "stdout"
-    main(**argvars)
+    testmain(**argvars)
         

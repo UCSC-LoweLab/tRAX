@@ -393,16 +393,17 @@ def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches =
 
     return coverageinfo( readcounts, allcoverages,readstarts, readends,multaminocoverages, multaccoverages, multtrnacoverages,uniquecoverages, uniquegenomecoverages,multigenomecoverages, readmismatches,adeninemismatches,thyminemismatches,cytosinemismatches, guanosinemismatches,readskips,trimmismatches = trimreadmismatches, trimcoverage = trimreadcoverage  )
 
-def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,sizefactor, mincoverage, trnastk, positionnums):
+def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,sizefactor, mincoverage, trnastk, positionnums, skipgaps = True):
 
-    print >>mismatchreport, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","uniquecoverage","multitrnacoverage","multianticodoncoverage","multiaminocoverage","tRNAreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
+    #print >>mismatchreport, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","uniquecoverage","multitrnacoverage","multianticodoncoverage","multiaminocoverage","tRNAreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
     #print >>sys.stderr,mismatchreport
     #print >>sys.stderr,"||***"
     samples = sampledata.getsamples()
     for currfeat in trnalist:
         #print >>sys.stderr, samplecoverages[list(samples)[0]].allcoverages.keys()
         totalreads = sum(samplecoverages[currsample].allcoverages[currfeat.name].totalreads for currsample in samples)
-        if totalreads < mincoverage:
+        ambigreads = sum(samplecoverages[currsample].allcoverages[currfeat.name].multaminocoverages for currsample in samples)
+        if totalreads - ambigreads < mincoverage:
             continue
         reportpositions = set()  
         for currsample in samples:
@@ -434,6 +435,9 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
             readskipcount  = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].readskips[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
 
             for i, currcount in enumerate(allcovcount):
+                #removing all non-canonical positions to save space/memory
+                if skipgaps and "gap" in positionnums[i]:
+                    continue
                 mismatchthreshold = .1
                 realbase = trnastk.aligns[currfeat.name][i].upper()
                 if realbase in gapchars:
@@ -444,9 +448,9 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
                 print >>mismatchreport, "\t".join([currfeat.name,currsample,str(positionnums[i]),str(covcounts[i]),str(allstarts[i]),str(allends[i]),str(uniquecounts[i]),str(multitrna[i]),str(multaccounts[i]),str(multaminocounts[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]/sizefactor[currsample]),realbase,str(mismatches[i]),str(deletions[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
     #sys.exit(1)        
 
-def locuscoverage(locicoverages, locicoveragetable, locilist,sampledata,sizefactor, mincoverage, locistk, locipositionnums):
+def locuscoverage(locicoverages, locicoveragetable, locilist,sampledata,sizefactor, mincoverage, locistk, locipositionnums, skipgaps = True):
 
-    print >>locicoveragetable, "\t".join(["tRNA_name","sample","position","coverage", "total"])
+    #print >>locicoveragetable, "\t".join(["tRNA_name","sample","position","coverage", "total"])
     samples = sampledata.getsamples()
     for currfeat in locilist:
 
@@ -460,6 +464,8 @@ def locuscoverage(locicoverages, locicoveragetable, locilist,sampledata,sizefact
 
             for i, currcount in enumerate(allcovcount):
                 mismatchthreshold = .1
+                if skipgaps and "gap" in locipositionnums[i]:
+                    continue
 
                 print >>locicoveragetable, "\t".join([currfeat.name,currsample,str(locipositionnums[i]),str(currcount),str(locicoverages[currsample].readcounts[currfeat.name])])
     #sys.exit(1)  
@@ -568,7 +574,7 @@ def getdiffs(samplecoverages, mismatchreport, trnalist,sampledata, sizefactor,mi
                     continue
                 posinfo[currfeat.name][currposition].addsample(currsample, covcounts[i],mismatches[i],readskipcount[i],actualbase,adeninecount[i],thyminecount[i],cytosinecount[i],guanosinecount[i], trimcovcount[i], trimmismatchcount[i])
                 #print >>mismatchreport, "\t".join([currfeat.name,currsample,str(positionnums[i]),str(covcounts[i]),str(allstarts[i]),str(uniquecounts[i]),str(multitrna[i]),str(multaccounts[i]),str(multaminocounts[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]),trnastk.aligns[currfeat.name][i],str(mismatches[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
-    print >>mismatchreport, "\t".join(["pos","firsample","secsample","firmismatches","firtotal","secmismatches","sectotal","firmismatchestrim","firtotaltrim","secmismatchestrim","sectotaltrim"])           
+    print >>mismatchreport, "\t".join(["pos","firsample","secsample","firmismatches","firtotal","secmismatches","sectotal","firmismatchestrim","firtotaltrim","secmismatchestrim","sectotaltrim"])
 
 
                 
@@ -625,7 +631,7 @@ def testmain(**argdict):
         edgemargin = int(argdict["edgemargin"])
     #currently crashes if set to zero
     if "mincoverage" not in  argdict:
-        mincoverage = 10
+        mincoverage = 30
     else:
         mincoverage = int(argdict["mincoverage"])  
     
@@ -713,57 +719,78 @@ def testmain(**argdict):
     featcount = defaultdict(int)
 
     maxoffset = 10
-    samplecoverages = dict()
-    uniquecoverages = dict()
+
     #threadmode = False
-    trackargs = list()
-    lociargs = list()
-    trackuniqargs = list()
-    coveragepool = Pool(processes = cores)
-    locicoverages = dict()
+
+    
+    
     #print >>sys.stderr, ",".join(curr.name for curr in locilist if "Ala" in curr.name)
     #sys.exit(1)
-    if not threadmode:
-        for currsample in samples:
-            samplecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend)
-            #uniquecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True)
-            locicoverages[currsample] =   getlocicoverage(  currsample, sampledata, locilist,  maxmismatches = maxmismatches, minextend = minextend)
- 
-    else:
-        for currsample in samples:
-            trackargs.append(compressargs(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend))
-            trackuniqargs.append(compressargs(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True))
-
-            lociargs.append(compressargs(  currsample, sampledata, locilist,  maxmismatches = maxmismatches, minextend = minextend))
- 
-        results = coveragepool.map(makecoveragepool, trackargs)
-        for i, currsample in enumerate(samples):
-            samplecoverages[currsample] = results[i]
-        lociresults = coveragepool.map(makelocicoveragepool, lociargs)
-        for i, currsample in enumerate(samples):
-            locicoverages[currsample] = lociresults[i]
-        #uniqresults = coveragepool.map(uniquecoverages, trackuniqargs)
-        #for i, currsample in enumerate(samples):
-        #    uniquecoverages[currsample] = uniqresults[i]
-    #print >>sys.stderr, samplecoverages.values()
     coveragetable = open(argdict["allcoverage"], "w")
+    print >>coveragetable, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","uniquecoverage","multitrnacoverage","multianticodoncoverage","multiaminocoverage","tRNAreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
+
     locicoveragetable = open(argdict["locicoverage"], "w")
+    print >>locicoveragetable, "\t".join(["tRNA_name","sample","position","coverage", "total"])
     #uniqcoveragetable = open(argdict["uniqcoverage"], "w")
     mismatchcomparetable = open("mismatchcompare.txt", "w")
-    
-    transcriptcoverage(samplecoverages, coveragetable, trnalist,sampledata,sizefactor, mincoverage,trnastk, positionnums)
-    
-    #transcriptcoverage(uniquecoverages, uniqcoveragetable, trnalist,sampledata,sizefactor, mincoverage,trnastk, positionnums)
 
-    
-    if True:
-        getdiffs(samplecoverages, mismatchcomparetable, trnalist,sampledata, sizefactor,mincoverage,trnastk, positionnums)
+    #I'm chunking the tRNAs into 100-long pieces to avoid memory issues with large tRNA sets
+    coveragepool = Pool(processes = cores)
+    trnachunksize = 50
+    for trnanum in range(0,len(trnalist),trnachunksize):
+         
+        trackargs = list()
+        lociargs = list()
+        trackuniqargs = list()
+        locicoverages = dict()
+        samplecoverages = dict()
+        uniquecoverages = dict()
+        endpoint = trnanum + trnachunksize
+        if len(trnalist) < endpoint:
+            endpoint = len(trnalist) - 1
+        #print >>sys.stderr, "chunk: "+str(trnanum)+"-"+str(endpoint)
+        trnasubset = trnalist[trnanum:endpoint]
+        locisubset = locilist[trnanum:endpoint]
+        if not threadmode:
+            for currsample in samples:
+                samplecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend)
+                #uniquecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True)
+                locicoverages[currsample] =   getlocicoverage(  currsample, sampledata, locisubset,  maxmismatches = maxmismatches, minextend = minextend)
+        
+        else:
+            for currsample in samples:
+                trackargs.append(compressargs(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend))
+                #trackuniqargs.append(compressargs(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True))
+        
+                lociargs.append(compressargs(  currsample, sampledata, locisubset,  maxmismatches = maxmismatches, minextend = minextend))
+        
+            results = coveragepool.map(makecoveragepool, trackargs)
+            for i, currsample in enumerate(samples):
+                samplecoverages[currsample] = results[i]
+            lociresults = coveragepool.map(makelocicoveragepool, lociargs)
+            for i, currsample in enumerate(samples):
+                locicoverages[currsample] = lociresults[i]
+            #uniqresults = coveragepool.map(uniquecoverages, trackuniqargs)
+            #for i, currsample in enumerate(samples):
+            #    uniquecoverages[currsample] = uniqresults[i]
+        #print >>sys.stderr, samplecoverages.values()
 
-    
-    
-    locuscoverage(locicoverages, locicoveragetable, locilist,sampledata, sizefactor,mincoverage, locistk, locipositionnums)
+        
+        transcriptcoverage(samplecoverages, coveragetable, trnasubset,sampledata,sizefactor, mincoverage,trnastk, positionnums)
+        
+        #transcriptcoverage(uniquecoverages, uniqcoveragetable, trnalist,sampledata,sizefactor, mincoverage,trnastk, positionnums)
+        
+        
+        if False:
+            getdiffs(samplecoverages, mismatchcomparetable, trnasubset,sampledata, sizefactor,mincoverage,trnastk, positionnums)
+        
+        
+        
+        locuscoverage(locicoverages, locicoveragetable, locisubset,sampledata, sizefactor,mincoverage, locistk, locipositionnums)
 
-
+    coveragetable.close()
+    mismatchcomparetable.close()
+    locicoveragetable.close()
         
 def main(**argdict):
     #print >>sys.stderr, argdict
