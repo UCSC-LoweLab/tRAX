@@ -56,7 +56,13 @@ from scipy.spatial.distance import euclidean
 gapchars = set("-._~")
 positions = list(str(curr) for curr in list([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]))
 
-
+def readpairfile(filename):
+    samplepairs = list()
+    for currline in open(filename):
+        fields = currline.split()
+        if len(fields) > 1:
+            samplepairs.append(tuple([fields[0],fields[1]]))
+    return samplepairs
 
 def readclusterfile(filename):
     trnaclusts = defaultdict(set)
@@ -132,7 +138,7 @@ class covline:
         
         self.total = self.acounts +self.ccounts +self.gcounts +self.tcounts +self.deletions 
     def percentdict(self, pseudocounts = .1):
-        return {"apercent":self.acounts/(self.total +pseudocounts)   ,"cpercent":self.ccounts/(self.total +pseudocounts)   ,"gpercent":self.gcounts/(self.total +pseudocounts)   ,"tpercent":self.tcounts/(self.total +pseudocounts), "delpercent":self.delcounts/(self.total +pseudocounts)   }
+        return {"apercent":self.acounts/(self.total +pseudocounts)   ,"cpercent":self.ccounts/(self.total +pseudocounts)   ,"gpercent":self.gcounts/(self.total +pseudocounts)   ,"tpercent":self.tcounts/(self.total +pseudocounts), "delpercent":self.deletions/(self.total +pseudocounts)   }
     def basecounts(self):
         return [self.acounts,self.ccounts,self.gcounts,self.tcounts, self.deletions]
     def percentcounts(self, pseudocounts = .01):
@@ -244,6 +250,37 @@ def hellingercounts(firset, secset, pcounts = .01):
     secprobs = list((curr)/(1.*sum(secset)) for curr in secset)
     return hellingerdistance(firprobs, secprobs)
 
+class covaggregate:
+    def __init__(self, covpos, covlines, orignum = None):
+        self.covpos = covpos
+        self.covlines = covlines
+        self.orignum = orignum
+    def isfullset(self):
+        return self.orignum is not None and self.orignum == len(self.covlines)
+    def getorignum(self):
+        return self.orignum
+    def posnum(self):
+        return len(self.covlines)
+    def combinebaseprobs(self):
+        countdict = defaultdict(list)
+        for currcov in self.covlines: 
+            currdict = currcov.percentdict(pseudocounts = .01)
+            for currbase in currdict.iterkeys():
+                countdict[currbase].append(currdict[currbase])
+        avgdict = dict()
+        for currbase in countdict.iterkeys():
+            avgdict[currbase] = (1.*sum(countdict[currbase]))/len(countdict[currbase])
+        return avgdict
+    def combineidentity(self):
+        return (1.*sum(curr.matchpercent() for curr in self.covlines))/len(self.covlines)
+    def refbase(self):
+        return self.covlines[0].actualbase
+    def basecounts(self):
+        baseavgs = self.combinebaseprobs()
+        #[self.acounts,self.ccounts,self.gcounts,self.tcounts, self.deletions]
+        return [baseavgs["apercent"],baseavgs["cpercent"],baseavgs["gpercent"],baseavgs["tpercent"],baseavgs["delpercent"]]
+
+        
 class covcomparison:
     def __init__(self, firpos, secpos, firdata, secdata):
         self.firpos = firpos
@@ -251,9 +288,9 @@ class covcomparison:
         self.firdata = firdata
         self.secdata = secdata
         
-    def chisquare(self, pcounts = .01):
+    def chisquare(self, pcounts = .01, mincount = 50):
         #scalingfactor = sum(self.firdata.basecounts())/(1.*sum(self.secdata.basecounts()))
-        if self.hascounts():
+        if self.hascounts(mincount = mincount):
             #print self.firdata.basecounts()
             #print sum(self.firdata.basecounts())
             #
@@ -347,9 +384,6 @@ class covdata:
                      #print currsample+" "+currfeat+" "+currpos
                      currcovpos = covpos( currsample, currfeat, currpos)
                      #print >>sys.stderr, currpos
-                     if currpos == 56:
-                         #print >>sys.stderr, "**||"
-                         pass
                      if currcovpos in self.covdict and (currbase is None or self.covdict[currcovpos].actualbase == currbase):
                          
                          covposlist.append(currcovpos)
@@ -358,6 +392,24 @@ class covdata:
     def compareposset(self, covposlist):
                 
         for firpos, secpos in itertools.combinations(covposlist, 2):
+            yield covcomparison(firpos, secpos, self.covdict[firpos], self.covdict[secpos] ) 
+    def allposset(self, covposlist):
+                
+        for firpos in  covposlist:
+            yield self.covdict[firpos]
+    def combineposset(self, covposlist, cutoff = 0):
+                
+        covpos = list(curr for curr in covposlist if self.covdict[curr].totalcounts() >= cutoff)
+        return covaggregate(covpos, list(self.covdict[curr] for curr in covpos), orignum = len(covposlist)) 
+            
+    def comparesampleset(self, firsamples, secsamples, covposlist):
+        
+        for currsample in firsamples:
+            pass
+        for currsample in secsamples:
+            pass
+        for firsample, secsample in itertools.product(firsamples, secsamples):
+            
             yield covcomparison(firpos, secpos, self.covdict[firpos], self.covdict[secpos] ) 
 
 def readcovfile(covfile):
@@ -429,7 +481,7 @@ def getreplicates(positions, trnainfo,sampleinfo):
         for curramino in trnainfo.allaminos():
             for currtrna in trnainfo.getaminotranscripts(curramino):
                 for currreplicate in sampleinfo.allreplicates():
-                    clustname = currreplicate + "_"+currpos+"pos"
+                    clustname = currreplicate #+ "_"+currpos+"pos"
                     yield clustname, sampleinfo.getrepsamples(currreplicate),[currtrna], [currpos] 
                     
 def gettrnasamples(positions, trnainfo,sampleinfo):
@@ -449,12 +501,14 @@ def getsamples(positions, trnainfo,sampleinfo):
                 clustname = currtrna + "_"+currpos+"pos"
                 yield clustname, sampleinfo.getsamples(),[currtrna], [currpos] 
                 
+
+                
                 
 def twopos(number):
     return "{:.2f}".format(number)
     
     
-def gettrnainfo(outfile, covcounts, positions, trnainfo,sampleinfo,mismatchthreshold = .1):
+def gettrnainfo(outfile, covcounts, positions, trnainfo,sampleinfo,mismatchthreshold = .1, mincount = 50):
     
     totalcounts = defaultdict(lambda: defaultdict(int))
 
@@ -469,7 +523,7 @@ def gettrnainfo(outfile, covcounts, positions, trnainfo,sampleinfo,mismatchthres
             posset = covcounts.getposset(samplelist,trnalist, poslist, currbase )
             
             for currpos in posset:
-                if covcounts.getpos(currpos).totalcounts() < 50:
+                if covcounts.getpos(currpos).totalcounts() < mincount:
                     continue
                 totalcounts[currpos.Feature][currpos.position] += 1
                 mismatchpercents[currpos.Feature][currpos.position].append(covcounts.getpos(currpos).mismatchpercent())
@@ -530,7 +584,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                
                
                currgroupname = groupname + "_"+currbase+"_clust"
-               testgroup = "M_dm_Heart_M6_minusAlkB_56pos_T_clust"  #
+               testgroup = "tRNA-Ala-TGC-5_58pos_A_clust" 
                allclusters.add(currgroupname)
                #print >>sys.stderr, ",".join(curr.Feature for curr in poslist)
                #print >>sys.stderr, currgroupname
@@ -540,8 +594,9 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                    #continue
                
                if not currpair.bothhavebase(currbase):
+                   #print >>sys.stderr, "bothhavebase"
                    continue
-                   
+               
                '''
                if currpair.firpos.Feature == "tRNA-Met-CAT-6" and currpair.secpos.Feature != 'tRNA-Gly-GCC-3':
                    
@@ -556,13 +611,15 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                    
                '''
 
-               if not currpair.hascounts(minreads):
+               if not currpair.hascounts(mincount = minreads):
+                   #print >>sys.stderr, "hascounts"
+                   #print >>sys.stderr, minreads
                    continue
-
+               
 
                if skipmatches and not currpair.containsbothmismatches():
                    continue
-                   
+               
                if shufflemode:
                    currpair = currpair.shufflecomparison()
                elif drawmode:
@@ -617,11 +674,73 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
            #print freqcounts.freqlists
 
             
+def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, pairfile = None,skipmatches = True, shufflemode = False, drawmode = False):
+    allclusters = set()
+    totalcounted = 0
+    skipunique = 0
+    entropies = list()
+
+
+    #print mismatchlocs
+    postotal = defaultdict(int)
+    posmismatch = defaultdict(int)
+    
+    
+    posinfo = dict()
+    allsamples = set()
+    allpos = set()
+    alltrnas = set()
+    for groupname, samplelist, trnalist, poslist in repgroups:
+        posset = covcounts.getposset(samplelist,trnalist, poslist)
+        currsample = groupname
+        currtrna = trnalist[0]
+        currpos = poslist[0]
+        #print >>sys.stderr, groupname
+        currinfo =  covcounts.combineposset(posset, cutoff = 50)
+        if currinfo.posnum() < 1:
+            continue
+        #if currinfo.posnum() < 2 or currinfo.isfullset(): #testing here how many replicates you need
+            #p
+        baseinfo = currinfo.combinebaseprobs()
+        #print >>sys.stderr,   currinfo.basecounts()
+        posinfo[tuple([currtrna,currpos,currsample])] = currinfo
+        allsamples.add(currsample)
+        allpos.add(currpos)
+        alltrnas.add(currtrna)
+        #print >>outfile, "\t".join([groupname,currsample,currtrna,currpos,",".join(str(curr) for curr in currinfo.basecounts())])             
+        for currset in covcounts.allposset(posset):
+            pass
+            #print >>outfile, "\t".join([groupname,currsample,currtrna,currpos,",".join(str(curr) for curr in currset.basecounts())])
+    #print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"])
+    print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","firsamples","fircounts","secname","secpercent","secsamples","seccounts","bdist"])
+    if pairfile is not None:
+        allpairs = readpairfile(pairfile)
+    for currtrna in alltrnas:
+        for currpos in allpos:
+            if pairfile is None:
+                allpairs = itertools.combinations(allsamples, 2)
+            for firsample, secsample in allpairs:
+                #print >>sys.stderr, "**"+currtrna+":"+currpos+":"+firsample
+                if tuple([currtrna,currpos,firsample]) not in posinfo or tuple([currtrna,currpos,secsample]) not in posinfo:
+                    continue
+                    pass
+                #print >>sys.stderr, "**"
+                firdata = posinfo[tuple([currtrna,currpos,firsample])]
+                secdata = posinfo[tuple([currtrna,currpos,secsample])]
+                print >>outfile, "\t".join([currtrna+"_pos"+currpos,firsample,currtrna,currpos,str(firdata.refbase()),str(firdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in firdata.basecounts()),secsample ,str(secdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in secdata.basecounts()),str(bhattacharyyadistance(firdata.basecounts(), secdata.basecounts()))])             
+             
+
     
 def main(**argdict):
     covfile = argdict["covfile"]
     skipmatches = argdict["skipperfect"]
     runname = argdict["runname"]
+    pairfile = argdict["pairfile"]
+    minreads = 50
+    if argdict["minreads"] is not None:
+        minreads = int(argdict["minreads"])
+        
+        
     trnainfo = transcriptfile(os.path.expanduser(argdict["trnafile"]))
     sampleinfo = samplefile(os.path.expanduser(argdict["samplefile"]))
     
@@ -702,7 +821,7 @@ def main(**argdict):
         sys.exit()
 
     
-    minreads = 50
+    #minreads = 50
     
     #sys.exit()
     
@@ -724,6 +843,12 @@ def main(**argdict):
     #no 56pos in results
     #outfile = open(runname+"-mismatchpos.txt","w")
     #gettrnainfo(outfile, covcounts, mismatchlocs, trnainfo,sampleinfo)
+    #sys.exit()
+    
+    outfile = open(runname+"-samplecomparepair.txt","w")
+    repgroups = getreplicates(mismatchlocs, trnainfo,sampleinfo)
+    createcombinedtable(outfile, covcounts, repgroups,minreads = minreads, pairfile = pairfile, skipmatches = False,shufflemode = False, drawmode = False)
+    outfile.close()
     #sys.exit()
     
     outfile = open(runname+"-repcompare.txt","w")
@@ -752,6 +877,11 @@ def main(**argdict):
     pairgroup = getsamples(mismatchlocs, trnainfo,sampleinfo)
     createtable(outfile, covcounts, pairgroup, minreads = minreads, skipmatches = False,shufflemode = False, drawmode = False)
     outfile.close()
+    
+
+    
+        
+
         
     outfile = open(runname+"-samplecomparedraw.txt","w")
     pairgroup = getsamples(mismatchlocs, trnainfo,sampleinfo)
@@ -772,6 +902,10 @@ if __name__ == "__main__":
                        help='sample file')
     parser.add_argument('--runname',
                        help='run name')
+    parser.add_argument('--minreads',
+                       help='minimum reads')
+    parser.add_argument('--pairfile',
+                       help='pair file')
     parser.add_argument('--skipperfect', action="store_true", default=False,
                        help='skip perfect matches to reference base')
     args = parser.parse_args()

@@ -61,7 +61,8 @@ def main(**args):
             print >>sys.stderr, "must have names in format '>Saccharomyces_cerevisiae_tRNA-Ala-AGC-1-10 (tRNAscan-SE ID: chrXIII.trna9)'"
             sys.exit()
             
-
+    
+        
     alltrnas = list()
     trnascantrnas = list()
     trnadbtrnas = list()
@@ -81,8 +82,24 @@ def main(**args):
     for currfile in args["rnacentral"]:
         trnacentraltrnas.extend(readrnacentral(currfile,args.chromtranslate,mode = 'transcript'))
     '''    
- 
-    alltrnas = list(getuniquetRNAs(trnascantrnas)) + trnacentraltrnas + trnadbtrnas
+    extratrnas = list()
+    if args["addtrna"]:
+        #addtrnafa = open(args["addtrna"], "r")
+        for currname, currseq in readmultifasta(args["addtrna"]):
+            #I'm making sure that the name fits this tRNA convention I'm establishing
+            namefields = currname.split("-")
+            #print >>sys.stderr,currname
+            #print >>sys.stderr,currseq
+            if len(namefields) != 4: #or namefields[0] != "newtRNA":
+                print >>sys.stderr, "additional tRNA "+currname+" from "+args["addtrna"] +" does not use a valid tRNA name"
+                print >>sys.stderr, "valid named in the format 'newtRNA-xxx-NNN-1-1'"
+                print >>sys.stderr, len(namefields) 
+                sys.exit(1)
+                pass
+            
+            
+            extratrnas.append(tRNAtranscript(currseq.replace("U","T"), None, namefields[1], namefields[2], [], None, name = currname, artificialtrna = True))
+    alltrnas = list(getuniquetRNAs(trnascantrnas)) + trnacentraltrnas + trnadbtrnas + extratrnas
     trnabed = None
     if args["bedfile"]:
         trnabed = open(args["bedfile"], "w")
@@ -128,7 +145,9 @@ def main(**args):
         cmrun = subprocess.Popen(cmcommand, stdout = devnull)
         result = cmrun.wait()
         if result:
+            print >>sys.stderr, " ".join(cmcommand)
             print >>sys.stderr, "Failure to align tRNAs"
+
             sys.exit(1)
         seqfile.close()
         #print >>sys.stderr, " ".join(cmcommand)
@@ -145,8 +164,11 @@ def main(**args):
         print >>maturetrnafa, ">"+name
         matureseq = currtrans.getmatureseq(addcca = not prokmode)
         print >>maturetrnafa, str("N" * margin) +matureseq+str("N" * margin)
+        locinames = ",".join(currlocus.name for currlocus in currtrans.loci)
+        if locinames == "":
+            locinames = "NA"
         if trnatable is not None:
-            print >>trnatable, "\t".join([name,",".join(currlocus.name for currlocus in currtrans.loci),currtrans.amino,currtrans.anticodon])
+            print >>trnatable, "\t".join([name,locinames,currtrans.amino,currtrans.anticodon])
         if trnabed is not None:
             transcriptrange = GenomeRange("genome", name, margin, margin + len(matureseq), strand = "+", name = name)
             print >>trnabed, transcriptrange.bedstring()

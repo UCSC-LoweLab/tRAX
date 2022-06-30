@@ -51,6 +51,8 @@ class counttypes:
         self.fulllocuscounts = defaultdict(int)
         self.extraseqcounts = defaultdict(int)
         self.trnaantilocuscounts  = defaultdict(int)
+        self.mismatchcounts  = defaultdict(int)
+        self.trnamismatchcounts  = defaultdict(int)
 
     def addsamplecounts(self):
         self.totalreads += 1
@@ -80,6 +82,10 @@ class counttypes:
         self.anticodoncounts[curranticodon] += 1
     def addindelreads(self, curramino):
         self.indelreads[curramino] += 1
+    def addmismatchcounts(self, mismatchcounts):
+        self.mismatchcounts[mismatchcounts] += 1
+    def addtrnamismatchcounts(self, mismatchcounts):
+        self.trnamismatchcounts[mismatchcounts] += 1
     def addotherreads(self):
         self.otherreads += 1
     def addtrnaantisense(self, currbed):
@@ -129,10 +135,12 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
     for i, currread in enumerate(getbam(bamfile, primaryonly = True)):
 
         isindel = False
+        hasmiamatch  = False
         readlength = currread.getlength()
         gotread = False
         #continue #point1
         readtypecounts.addsamplecounts()
+        readtypecounts.addmismatchcounts(currread.getmismatches())
         if currread.hasindel():
             readtypecounts.addindelreads(readlength)
             isindel = True
@@ -144,15 +152,22 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
         readtypecounts.addreadlengths(readlength)
         #readlengths[currsample][readlength] += 1
         #continue #point2
+        #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+        #    print >>sys.stderr, "**foundread"
         for currbed in trnaloci:
             for currfeat in trnaloci[currbed].getbin(currread):
                 expandfeat = currfeat.addmargin(30)
-                
-                if currfeat.coverage(currread) > 10 and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586"  and currfeat.name == "tRNA-Val-AAC-5-1":
+                #    print >>sys.stderr, "**trnaread:" +str(currfeat.coverage(currread))
+                #    print >>sys.stderr, "**trnaread:" +str(currfeat.coverage(currread))
+                if currfeat.coverage(currread) > 10: # and (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                    #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+                    #    print >>sys.stderr, "**foundread:" +str(currfeat.name)
                     if currfeat.strand != currread.strand:
                         readtypecounts.addantilocuscounts(currbed)
                         break
-                    
+                    if (currread.start + minpretrnaextend <= currfeat.start or currread.end - minpretrnaextend >= currfeat.end):
+                        pass
                     readtypecounts.addpretrnareadlengths(readlength)
                     readtypecounts.addtrnalocuscounts(currbed)
                     if currread.start + fullpretrnathreshold <  currfeat.start and currread.end - fullpretrnathreshold + 3 >  currfeat.end:
@@ -175,6 +190,8 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
                     readtypecounts.addtrnaantisense(currbed)
                     gotread = True
                     break
+        #if currread.name == "NB501427:473:H3YJ2BGXG:3:11512:1635:4586":
+        #    print >>sys.stderr, "**foundread2"            
         if gotread: 
             continue
         #continue #point3
@@ -183,11 +200,13 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
             if currread.chrom in maturenames[currbed]:
                 currfeat = maturenames[currbed][currread.chrom]
                 if currread.strand == "+":
+                    
                     readtypecounts.addtrnareadlengths(readlength)
                     readtypecounts.addtrnasamplecounts()
                     readtypecounts.addtrnacounts(currbed)
                     readtypecounts.addaminocounts(trnainfo.getamino(currfeat.name))
                     readtypecounts.addanticodoncounts(trnainfo.getanticodon(currfeat.name))
+                    readtypecounts.addtrnamismatchcounts(currread.getmismatches())
                     
 
                     #aminos.add(trnainfo.getamino(currfeat.name))
@@ -431,24 +450,63 @@ def printrealcounts(countfile,samples, sampledata,allcounts,trnalist, trnaloci, 
         print  >>countfile, "tRNA\t"+"\t".join(str(allcounts[currsample].trnacounts[currbed]) for currsample in samples)
         
 
-def printaminocounts(trnaaminofilename, sampledata,allcounts, sizefactor):
+def printaminocounts(trnaaminofilename, sampledata,trnainfo,allcounts, sizefactor):
     #print >>sys.stderr, trnaaminocounts
     replicates = list(sampledata.allreplicates())
     trnaaminofile = open(trnaaminofilename, "w")
-    aminos = allaminos
-    #print >>sys.stderr, aminos
+    #aminos = allaminos
+    #otheraminos = set().union(*list(allcounts[currsample].aminos for currsample in sampledata.getsamples())) - set(allaminos)
+    #aminos = list(allaminos) + list(otheraminos)
+    
+    aminos = trnainfo.allaminos()
+    print >>sys.stderr, aminos
     print  >>trnaaminofile, "\t".join(replicates)
     for curramino in aminos:
         #print >>sys.stderr, curramino
         print >>trnaaminofile, curramino+"\t"+"\t".join(str(sum(allcounts[currsample].aminocounts[curramino]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
 
-def printanticodoncounts(trnaanticodonfilename, sampledata,allcounts, sizefactor):
-    replicates = list(sampledata.allreplicates())
+def printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo,allcounts, sizefactor):
+    #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
+    anticodons = trnainfo.allanticodons()
     trnaanticodonfile = open(trnaanticodonfilename, "w")
-    anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
-    print  >>trnaanticodonfile, "\t".join(replicates)
-    for curranticodon in anticodons:
-        print >>trnaanticodonfile, curranticodon+"\t"+"\t".join(str(sum(allcounts[currsample].anticodoncounts[curranticodon]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+    repmode = False
+    if repmode:
+        replicates = list(sampledata.allreplicates())
+        
+        print  >>trnaanticodonfile, "\t".join(replicates)
+        for curranticodon in anticodons:
+            print >>trnaanticodonfile, curranticodon+"\t"+"\t".join(str(sum(allcounts[currsample].anticodoncounts[curranticodon]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+    else:
+        allsamples = list(sampledata.getsamples())
+        
+        
+        print  >>trnaanticodonfile, "\t".join(allsamples)
+        for curranticodon in anticodons:
+            print >>trnaanticodonfile, curranticodon+"\t"+"\t".join(str(allcounts[currsample].anticodoncounts[curranticodon]/sizefactor[currsample]) for currsample in allsamples)
+def printmismatchcounts(trnamismatchname, sampledata,trnainfo,allcounts, sizefactor):
+    #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
+    anticodons = trnainfo.allanticodons()
+    trnamismatchfile = open(trnamismatchname, "w")
+    repmode = False
+    mismatchcounts = range(10)
+    if repmode:# not tested yet
+        replicates = list(sampledata.allreplicates())
+        
+        print  >>trnamismatchfile, "count\ttype\t"+"\t".join(replicates)
+        for currmismatch in mismatchcounts:
+            
+            print >>trnamismatchfile, str(currmismatch)+"\ttrna\t"+"\t".join(str(sum(allcounts[currsample].trnamismatchcounts[currmismatch] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+            print >>trnamismatchfile, str(currmismatch)+"\tnontrna\t"+"\t".join(str(sum(allcounts[currsample].mismatchcounts[currmismatch] for currsample in sampledata.getrepsamples(currrep)) - sum(allcounts[currsample].trnamismatchcounts[curranticodon] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates)
+
+    else:
+        allsamples = list(sampledata.getsamples())
+        
+        
+        print  >>trnamismatchfile, "count\ttype\t"+"\t".join(allsamples)
+        for currmismatch in mismatchcounts:
+            print >>trnamismatchfile, str(currmismatch)+"\ttrna\t"+"\t".join(str(allcounts[currsample].trnamismatchcounts[currmismatch]/sizefactor[currsample]) for currsample in allsamples)
+            print >>trnamismatchfile, str(currmismatch)+"\tnontrna\t"+"\t".join(str(allcounts[currsample].mismatchcounts[currmismatch]/sizefactor[currsample] - allcounts[currsample].trnamismatchcounts[currmismatch]/sizefactor[currsample]) for currsample in allsamples)
+
 
 
 def printtrnanormfile(samples, allcounts):         
@@ -479,7 +537,7 @@ def counttypereadspool(args):
 def compressargs( *args, **kwargs):
     return tuple([args, kwargs])
     
-def testmain(**argdict):
+def main(**argdict):
     argdict = defaultdict(lambda: None, argdict)
     countfrags = argdict["countfrags"]
     combinereps = argdict["combinereps"]
@@ -531,7 +589,8 @@ def testmain(**argdict):
     trnaanticodonfilename = argdict["trnaanticodonfile"]
     trnanormfile = argdict["trnanormfile"]
     allreadsnormfile = argdict["allreadsnormfile"]
-    readlengthfile = argdict["readlengthfile"]    
+    readlengthfile = argdict["readlengthfile"]
+    mismatchfilename = argdict["mismatchfile"]    
     
     if argdict["realcountfile"] == "stdout":
         realcountfile = sys.stdout
@@ -653,10 +712,14 @@ def testmain(**argdict):
         printlengthfile(readlengthfile, samples, allcounts)
 
     if trnaaminofilename is not None:
-        printaminocounts(trnaaminofilename, sampledata, allcounts, sizefactor)
+        printaminocounts(trnaaminofilename, sampledata,trnainfo, allcounts, sizefactor)
     if trnaanticodonfile is not None:
-        printanticodoncounts(trnaanticodonfilename, sampledata, allcounts, sizefactor)
-def main(**argdict):
+        printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo, allcounts, sizefactor)
+    if mismatchfilename is not None:
+        printmismatchcounts(mismatchfilename, sampledata,trnainfo, allcounts, sizefactor)
+
+
+def oldmain(**argdict):
     argdict = defaultdict(lambda: None, argdict)
     countfrags = argdict["countfrags"]
     combinereps = argdict["combinereps"]

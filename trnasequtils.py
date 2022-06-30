@@ -11,7 +11,7 @@ from distutils.spawn import find_executable
 
 from collections import defaultdict
 
-allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','iMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
+allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Ile2','Leu','Lys','Met','iMet','fMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
 
 def readmultifasta(fafile):
     #print chrom+":"+ chromstart+"-"+ chromendre
@@ -262,8 +262,11 @@ class RnaAlignment(alignment):
         for curr in self.aligns.iterkeys():
             newseqs[curr] =  length*"N" + self.aligns[curr]+ length*"N"
         newstruct = length * ":" + self.currstruct + length * ":"
-
-        return RnaAlignment(newseqs, newstruct)
+        if self.consensus is None:
+            newconsensus = None
+        else:
+            newconsensus  =   length*"N" + self.consensus+ length*"N"
+        return RnaAlignment(newseqs, newstruct, consensus = newconsensus)
 
     def viennaformat(self):
         output = ""
@@ -310,8 +313,11 @@ def readrnastk(stk):
     for line in stk:
         line = line.rstrip()
         if line.startswith("//"):
+            #print >>sys.stderr, "||||||||||||||||||"
+            #print >>sys.stderr, consensus
             if consensus == "":
                 consensus = None
+            #print >>sys.stderr, consensus
             yield RnaAlignment(seqs, struct, consensus = consensus)
             seqs = defaultdict(str)
             struct = ""
@@ -324,9 +330,19 @@ def readrnastk(stk):
         elif line.startswith("#=GC SS_cons"):
             struct += line.split()[2]
         elif line.startswith("#=GC RF"):
+            #print >>sys.stderr, "********************"
+            #
+            #print >>sys.stderr, line.split()[2]
+            #print >>sys.stderr, "#############################"
             consensus += line.split()[2]
             
-
+def uniqueorder(inp):
+    
+    alldata = set()
+    for curr in inp:
+        if curr not in alldata:
+            yield curr
+            alldata.add(curr)
 class transcriptfile:
     def __init__(self, trnafilename):
         trnafile = open(trnafilename)
@@ -336,6 +352,8 @@ class transcriptfile:
         amino = dict()
         anticodon = dict()
         transcriptdict = defaultdict(set)
+        aminoorder = list()
+        anticodonorder = list()
         for i, line in enumerate(trnafile):
             fields = line.split()
             if len(fields) < 2:
@@ -343,6 +361,8 @@ class transcriptfile:
             trnatranscripts.append(fields[0])
             amino[fields[0]] = fields[2]
             anticodon[fields[0]] = fields[3]
+            aminoorder.append(fields[2])
+            anticodonorder.append(fields[3])
             for currlocus in fields[1].split(','):
                 locustranscript[currlocus] = fields[0]
                 loci.append(currlocus)
@@ -355,6 +375,9 @@ class transcriptfile:
         self.anticodon = anticodon
         self.transcriptdict = transcriptdict
         self.loci = loci
+        
+        self.aminoorder = tuple(uniqueorder(aminoorder))             
+        self.anticodonorder = tuple(uniqueorder(anticodonorder))
     def gettranscripts(self):
         return set(self.transcripts)
     def getlocustranscript(self, locus):
@@ -367,9 +390,9 @@ class transcriptfile:
         return  self.anticodon[trna]
         
     def allaminos(self):
-        return  set(self.amino.values())
+        return  self.aminoorder
     def allanticodons(self):
-        return  set(self.anticodon.values())
+        return  self.anticodonorder
     def getaminotranscripts(self, trnaamino):
         return  set(curr for curr in self.transcripts if trnaamino == self.amino[curr])
     def getanticodontranscripts(self, trnaanticodon):
@@ -463,6 +486,8 @@ class samplefile:
         return list(curr+ ".bam" for curr in self.samplelist)
     def getbam(self, sample):
         return self.bamdir + "/" + sample + ".bam" 
+    def getmergebam(self, sample):
+        return self.bamdir + "/" + sample + "-merge.bam" 
     def getfastq(self, sample):
         return self.samplefiles[sample]
     def getreplicatename(self, sample):
@@ -500,7 +525,7 @@ def getsizefactors( sizefactorfilename):
 #special class that uses the read indentifier for hashing in sets
 
 class GenomeRange:
-    __slots__ = "dbname", "chrom", "strand","name", "fastafile", "start", "end"
+    __slots__ = "dbname", "chrom", "strand","name", "fastafile", "start", "end", "data"
     def __eq__(self, other):
         return self.strand == other.strand and self.chrom == other.chrom and self.start == other.start and self.end == other.end
     def __hash__(self):
@@ -594,7 +619,10 @@ class GenomeRange:
             return self.data["seq"]
         else:
             return revcom(self.data["seq"])
-
+    def getgc(self):
+        seq = self.bamseq()
+        
+        return sum(1 if currbase in set(["G","C"]) else 0 for currbase in seq) 
 class GenomeRead(GenomeRange):
     def __eq__(self, other):
         return self.name == other.name
@@ -602,6 +630,7 @@ class GenomeRead(GenomeRange):
         return  hash(self.name)
     def __init__(*args, **nargs):
         GenomeRange.__init__(*args, **nargs)
+
 '''
 Still need to add trailer fragment code, both here and elsewhere
 '''
@@ -754,8 +783,11 @@ def isprimarymapping(mapping):
 def issinglemapping(mapping):
     return mapping.mapq > 2
     
+def mismatchnum(mapping):
+    return int(mapping.get_tag("XM"))
+    
 def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleonly = False, maxmismatches = None, allowindels=True, skiptags = False):
-    bamiter = None
+
     try:
         if chromrange is not None:
             bamiter = bamfile.fetch(chromrange.chrom, chromrange.start, chromrange.end)
@@ -769,6 +801,8 @@ def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleo
             if singleonly and not issinglemapping(currline):
                 continue
             if not allowindels and len(currline.cigar) > 1:
+                continue
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
                 continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
@@ -783,19 +817,28 @@ def getbamrangeshortseq(bamfile, chromrange = None, primaryonly = False, singleo
             pass
 def getbamrangeshort(bamfile, chromrange = None, primaryonly = False, singleonly = False, maxmismatches = None, allowindels=True, skiptags = False):
     bamiter = None
+    bamiter = None
+
     try:
         if chromrange is not None:
             bamiter = bamfile.fetch(chromrange.chrom, chromrange.start, chromrange.end)
         else:
             bamiter = bamfile.fetch()
    
-        for currline in bamiter: 
+        for currline in bamiter:
+            #if mismatchnum(currline) > maxmismatches:
+            #    print >>sys.stderr, "*|*"
+            #    print >>sys.stderr, maxmismatches
+            #    print >>sys.stderr, mismatchnum(currline)
             if primaryonly and not isprimarymapping(currline):
                 continue
 
             if singleonly and not issinglemapping(currline):
                 continue
             if not allowindels and len(currline.cigar) > 1:
+                continue
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
+                #print >>sys.stderr, "skipped"
                 continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
@@ -821,12 +864,19 @@ def getbamrange(bamfile, chromrange = None, primaryonly = False, singleonly = Fa
             bamiter = bamfile.fetch()
    
         for currline in bamiter:
+            
+            #if mismatchnum(currline) > maxmismatches:
+            #    print >>sys.stderr, "**"
+            #    print >>sys.stderr, maxmismatches
+            #    print >>sys.stderr, mismatchnum(currline)
             if primaryonly and not isprimarymapping(currline):
                 continue
 
             if singleonly and not issinglemapping(currline):
                 continue
-           
+            if maxmismatches is not None and mismatchnum(currline) > maxmismatches:
+                #print >>sys.stderr, "skipped"
+                continue
             rname = bamfile.getrname(currline.rname)
             strand = "+"
             strand = ifelse(currline.is_reverse, '-','+')
@@ -918,6 +968,11 @@ class BamRead(GenomeRange):
             return revcom(self.bamline.seq)
         else:
             return self.bamline.seq
+            
+    def getgc(self):
+        seq = self.getseq()
+        
+        return sum(1 if currbase in set(["G","C"]) else 0 for currbase in seq) 
     def issinglemapped(self):
         return self.bamline.mapq >= 2
     def getcigar(self):
@@ -1036,7 +1091,8 @@ def getnamedict(genelist):
         namedict[currgene.name] = currgene
     return namedict
         
-        
+class FastqSeqException(Exception):
+    pass
 def getseqs(fafile,rangedict, faindex = None):
     if faindex is not None:
         try:
@@ -1075,6 +1131,7 @@ def getseqs(fafile,rangedict, faindex = None):
                         pass
                     elif chromstart <= currloc < currloc + len(line) < chromend:
                         allseqs[currname] += line
+                
             currloc += len(line)
     genomefile.close()
     finalseqs = dict()
@@ -1089,6 +1146,9 @@ def getseqs(fafile,rangedict, faindex = None):
             finalseqs[currname] = allseqs[currname].upper()
     for currseq in rangedict.iterkeys():
         if currseq not in finalseqs:
+            #print >>sys.stderr, "**"
+            #print >>sys.stderr, fafile
+            
             print >>sys.stderr, "No sequence extracted for "+rangedict[currseq].dbname+"."+rangedict[currseq].chrom+":"+str(rangedict[currseq].start)+"-"+str(rangedict[currseq].end)
     return finalseqs        
     
@@ -1113,8 +1173,9 @@ class fastaindex:
     def getseek(self, currchrom,loc):
         #print >>sys.stderr, (self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
         if currchrom not in self.chromsize:
-            print >>sys.stderr, "sequence "+currchrom+" not found in index for "+self.fafile
-            sys.exit(1)
+            raise FastqSeqException("sequence "+currchrom+" not found in index for "+self.fafile)
+            #print >>sys.stderr, 
+            #sys.exit(1)
         return self.chromoffset[currchrom] + loc + int(loc/(self.seqlinesize[currchrom]))*(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
     def getfullseqs(self, names):
         genomefile = open(self.fafile, "r")
@@ -1129,19 +1190,24 @@ class fastaindex:
         genomefile = open(self.fafile, "r")
         allseqs = dict()
         for currname, currregion in rangedict.iteritems():
-            currchrom = currregion.chrom
-            #faskip = 
-            #print >>sys.stderr, int(currregion.start/(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom]))
-            genomefile.seek(self.getseek(currchrom,currregion.start))
-            seq = genomefile.read(self.getseek(currchrom,currregion.end) - self.getseek(currchrom,currregion.start))
-            seq = seq.replace("\n","")
-            allseqs[currname] = seq
-            #print >>sys.stderr, len(seq)
-            #print >>sys.stderr, str(currregion.end - currregion.start)
-            
+            try:
+                currchrom = currregion.chrom
+                #faskip = 
+                #print >>sys.stderr, int(currregion.start/(self.seqlinebytes[currchrom] - self.seqlinesize[currchrom]))
+                genomefile.seek(self.getseek(currchrom,currregion.start))
+                seq = genomefile.read(self.getseek(currchrom,currregion.end) - self.getseek(currchrom,currregion.start))
+                seq = seq.replace("\n","")
+                allseqs[currname] = seq
+                #print >>sys.stderr, len(seq)
+                #print >>sys.stderr, str(currregion.end - currregion.start)
+            except FastqSeqException as e:
+                allseqs[currname] = None
+                pass
         genomefile.close()
         finalseqs = dict()
         for currname in allseqs.iterkeys():
+            if allseqs[currname] is None:
+                continue
             #print >>sys.stderr, currname
             #allseqs[currname] = allseqs[currname].upper()
             if (rangedict[currname].strand == "-"):

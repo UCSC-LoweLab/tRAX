@@ -94,8 +94,11 @@ parser.add_argument('--genomefile',required=True,
                    help='Fasta file containing genome sequence')
 parser.add_argument('--trnascanfile',required=True,
                    help='output from tRNAscan-SE run')
+parser.add_argument('--addtrnas',
+                   help='Additional tRNA sequences')
 parser.add_argument('--addseqs',
                    help='file with additional sets of sequence transcripts')
+
 parser.add_argument('--gtrnafafile',
                    help='Fasta file of tRNA sequences from gtRNAdb')
 parser.add_argument('--namemapfile',
@@ -124,6 +127,7 @@ scanfile = args.trnascanfile
 genomefile = args.genomefile
 gtrnafafile = args.gtrnafafile
 namemapfile = args.namemapfile
+addtrna = args.addtrnas
 forcecca = args.forcecca
 if namemapfile is None:
     print >>sys.stderr, "Name map file currently needed for tRNA database creation"
@@ -185,7 +189,7 @@ if forcecca:
 
 transcriptstk = dbdirectory+dbname+"-trnaalign.stk"
 locusstk = dbdirectory+dbname+"-trnaloci.stk"
-getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=transcriptstk,locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)
+getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,addtrna = addtrna, namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=transcriptstk,locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)
 aligntrnalocus.main(genomefile=genomefile,stkfile=locusstk,trnaloci=dbdirectory+dbname+"-trnaloci.bed", cmmodel = trnamodel)
 
 

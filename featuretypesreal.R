@@ -6,6 +6,12 @@ library(scales)
 
 args <- commandArgs(trailingOnly = TRUE)
 
+outtype = ""
+if(length(args) > 2){
+outtype = args[3]
+}
+
+
 #args <- c("hg19-genomictrailertable.txt","hg19-genomicbarplot.png")
 #args =c("repfragtypenormcounts.txt","barplot.png")
 
@@ -33,8 +39,14 @@ sampletotals = aggregate(countsmelt$value, list(countsmelt$variable), sum)
 
 
 #sampletotals$x[countsmelt$variable]
+
 #countsmelt = countsmelt[countsmelt$value > 100,]
+countsmelt = countsmelt[countsmelt$value > 0,]
+
+if(outtype != "all"){
+
 countsmelt = countsmelt[countsmelt$value > sampletotals$x[countsmelt$variable] / 100,] #filters out those types below a certain level
+}
 #countsmelt = countsmelt
 #countsmelt
 ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 

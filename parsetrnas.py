@@ -34,7 +34,7 @@ class tRNAlocus:
         self.rawseq = rawseq
 
 class tRNAtranscript:
-    def __init__(self, seq, score, amino, anticodon, loci, intronseq, name = None, rawseq = None):
+    def __init__(self, seq, score, amino, anticodon, loci, intronseq, name = None, rawseq = None, artificialtrna = False):
         self.seq = seq
         self.score = score
         self.amino = amino
@@ -42,7 +42,7 @@ class tRNAtranscript:
         self.loci = tuple(loci)
         self.intronseqs = intronseq
         self.name = name
-
+        self.artificialtrna = artificialtrna
         self.rawseq = rawseq
     def getmatureseq(self, addcca = True):
         prefix = ""
@@ -50,7 +50,7 @@ class tRNAtranscript:
         if self.amino == "His":
             prefix = "G"
         end = ""
-        if addcca:
+        if addcca and not self.artificialtrna:
             end = "CCA"
         return prefix + self.seq + end 
     
@@ -217,6 +217,7 @@ def readtRNAscan(scanfile, genomefile, mode = None):
         currtRNA.fastafile = genomefile
 
         trnalist.append(currtRNA)
+        #print >>sys.stderr,trnalist
         if int(fields[6]) != 0:
             if currtRNA.strand ==  "-":
                 intronstart = int(fields[2]) - int(fields[6]) 
@@ -225,9 +226,10 @@ def readtRNAscan(scanfile, genomefile, mode = None):
                 intronstart = int(fields[6]) - int(fields[2]) - 1
                 intronend = int(fields[7]) - int(fields[2])
             tRNAintron[currtRNA.name] = tuple([intronstart, intronend])
+    #should add check to make sure all trnas are grabbed
     trnaseqs = getseqdict(trnalist, faifiles = {orgname:genomefile+".fai"})
     intronseq = defaultdict(str)
-    
+    #print >>sys.stderr,trnalist
     for curr in trnaseqs.iterkeys():
         currintron = None
         if curr in tRNAintron:
@@ -237,7 +239,7 @@ def readtRNAscan(scanfile, genomefile, mode = None):
             trnaseqs[curr] = trnaseqs[curr][:start] + trnaseqs[curr][end:]
             currintron = tRNAintron[curr]
             
-        yield tRNAlocus(trnas[curr], trnaseqs[curr], trnascore[curr],trnaamino[curr],trnaanticodon[curr],intronseq[curr], introns)
+        yield tRNAlocus(trnas[curr], trnaseqs[curr], trnascore[curr],trnaamino[curr],trnaanticodon[curr],intronseq[curr], currintron)
 def striplocus(trnaname):
     return re.sub(r"\-\d+$", "",trnaname)
 #Sequence		tRNA     	Bounds   	tRNA	Anti	Intron Bounds	Inf	HMM	2'Str	Hit	      	Isotype	Isotype	Type

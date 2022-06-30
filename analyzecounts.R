@@ -85,7 +85,7 @@ comparisons <- lapply(comparisons,unlist)
 comparisons = combn(unique(sampleinfo),2,simplify = FALSE)
 }
 
-
+library(viridis)
 coldata = data.frame(condition=factor(sampleinfo))
 
 #print(ncol(readcounts))
@@ -105,11 +105,24 @@ write.table(normalizedrnas,paste(experimentname,"/",experimentname,"-normalizedr
 write.table(rbind(colnames(readcounts),cds$sizeFactor),file=paste(experimentname,"/",experimentname,"-SizeFactors.txt", sep = ""), row.names=FALSE,col.names=FALSE)
 cds = DESeq(cds,betaPrior=TRUE)
 
+deseq2Data <- cds
 
-#print(coldata)
+#not sure why this fails sometimes
+
+heatmaps = FALSE 
+if(heatmaps){
+
+
+deseq2VST <- vst(deseq2Data,fitType = "local")
+write.table(as.data.frame(assay(deseq2VST)),paste(experimentname,"/",experimentname,"-vst.txt", sep = ""), col.names=NA )
+
+deseq2rlog <- rlog(deseq2Data)  
+write.table(as.data.frame(assay(deseq2rlog)),paste(experimentname,"/",experimentname,"-rlog.txt", sep = ""), col.names=NA )
 
 
 
+
+}
 names = lapply(comparisons, function(currcompare){ })
 
 compareresults = lapply(comparisons, function(currcompare){ list(paste(currcompare[[1]],currcompare[[2]] ,sep= "_"),results( cds, contrast=c("condition", currcompare[[1]] ,currcompare[[2]]),cooksCutoff  =TRUE))})
@@ -154,22 +167,78 @@ write.table(alllogvals,paste(experimentname,"/",experimentname,"-logvals.txt", s
 
 outputformat = ".pdf"
 if(length(args) > 3){
-for (currpair in colnames(alllogvals)){
+
+#currpair in colnames(alllogvals)
+for (currcomp in comparisons){
+
+currpair = paste(currcomp[1], currcomp[2], sep ="_") 
+#heatmapstuff
+
 
 currlogval = alllogvals[,c(currpair)]
 currprob = allprobs[,c(currpair)]
 genename = rownames(allprobs)
 
+#pairname = sub( ".", "_",currpair,fixed=TRUE)
+pairname = sub( ":", "_",currpair,fixed=TRUE)
 currsampledata = data.frame(genename, currlogval, currprob)
 
-#print(head(currsampledata))
+#print(head(allprobs))
+#print("$$**")
+#print(head(alllogvals))
+
+if(heatmaps){
+#deseq2Results <- results(cds, contrasts = list(currpair[1], currpair[2]))
+#print(head(deseq2Results))
+#deseq2ResDF <- as.data.frame(deseq2Results) 
+#print("**")
+deseq2trans = deseq2rlog
+# Convert the DESeq transformed object to a data frame
+deseq2trans <- assay(deseq2trans)
+deseq2trans <- as.data.frame(deseq2trans)
+
+#center on mean
+deseq2trans = sweep(deseq2trans, MARGIN=1, STATS= rowMeans(deseq2trans))
+
+deseq2trans$Gene <- rownames(deseq2trans)
+
+sigGenes <- currsampledata$genename[abs(currsampledata$currlogval) > 3 & currsampledata$currprob < .05]
 
 
-displaygenes = c("Snora35","Snord116l17", "Mirlet7a-2" ,"Mirlet7b","Mirlet7c-2","Mir138-1", "Mir122", "Mir133a-1")
-livergenes =  c("Mir33-201","Mir223","Mir30c-1","Mir144","Mir148a","Mir24-1","Mir29a","Mir122")
-musclegenes = c("Mir1a-1","Mir133a-1","Mir208a","Mir208b","Mir499")
+deseq2trans <- deseq2trans[deseq2trans$Gene %in% sigGenes,]
 
-displaygenes = c(displaygenes, livergenes, musclegenes)
+library(reshape2)
+
+# First compare wide vs long version
+deseq2trans_wide <- deseq2trans
+deseq2trans_long <- melt(deseq2trans, id.vars=c("Gene"))
+
+#head(deseq2trans)
+#head(deseq2trans)
+
+# Now overwrite our original data frame with the long format
+deseq2trans <- melt(deseq2trans, id.vars=c("Gene"))
+#print("**")
+#print(currcomp[[1]])
+#print(currcomp[[2]])
+#print(coldata)
+samplenames = as.character(sampledata[,1])
+#print(samplenames)
+#print(samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]])
+currsamples = samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]]
+print(currsamples)
+print(head(deseq2trans))
+deseq2trans = deseq2trans[deseq2trans$variable %in% currsamples,]
+print("()")
+
+maxscore = max(abs(deseq2trans$value))
+# Make a heatmap
+print(head(deseq2trans))
+heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "log-fold change") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
+ggsave(paste(experimentname,"/",pairname,"-deseqheatmap",".pdf",sep= ""), heatmap ) 
+}
+
+
 
 displaygenes = c()
 currsampledata$name = rownames(currsampledata)
@@ -183,14 +252,16 @@ displayfeats = ifelse(abs(currsampledata$currlogval) > 1.5 & currsampledata$curr
 #print(rownames(currsampledata))
 #print(head(displayfeats))
 
-pairname = sub( ".", "_",currpair,fixed=TRUE)
-pairname = sub( ":", "_",currpair,fixed=TRUE)
 
 #currsampledata = cbind(currlogval,currprob) # 
 #print(head(currsampledata))
 #currsampledata = currsampledata[currsampledata$currprob > .005,]
 #print(head(currsampledata))
-currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+#print(currcomp[[1]])
+#print(currcomp[[2]])
+currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+
+
 ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
 
 trnasampledata = currsampledata[grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE),]
@@ -201,7 +272,7 @@ trnapvalcutoff = sort(trnasampledata$currprob)[10]
 trnadisplayfeats = ifelse(abs(trnasampledata$currlogval) > 1.5 & trnasampledata$currprob < trnapvalcutoff, as.character(trnasampledata$genename), "")
 
 
-currplot <- ggplot(trnasampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+currplot <- ggplot(trnasampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
 ggsave(paste(experimentname,"/",pairname ,"-volcano_tRNA",outputformat,sep= ""), currplot) 
 
 }
@@ -243,8 +314,6 @@ sortcombinevals = allcombinevals[order(apply(alllogvals,1,max)),]
 
 #write.table(allcombined[apply(normalizedrnas,1,max) > 30 & apply(alllogvals,1,min) < .05 ,],paste(experimentname,"/",experimentname,"-relevnormalized.txt", sep = ""), col.names=NA )
 
-#write.table(data[abs( log2(data$AlkB_control)- log2(data$AlkB_HCC_1)) > 1.5,],paste(experimentname,"/",experimentname,"-significant.txt", sep = ""))
-
 medcounts = list()
 
 samplenames <- as.character(unique(sampledata[,2]))
@@ -264,7 +333,6 @@ medcounts[[samplenames[i]]] <- normalizedrnas[,cols]
 }
 }
 
-#print(medcounts[['Liver_PlusAlkB']]['Snora35'])
 
 #print(medcounts) 
 medcountmat <- do.call("cbind",medcounts)
@@ -277,7 +345,6 @@ write.table(medcountmat,paste(experimentname,"/",experimentname,"-medians.txt", 
 
 #print(head(medcountmat))
 medcountmat = as.matrix(medcountmat)
-#print(head(medcountmat["Snora35",]))
 
 
 allcombinevals = as.matrix(allcombinevals)
