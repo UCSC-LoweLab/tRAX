@@ -87,8 +87,9 @@ def readcutadapt(processoutput):
     if processoutput.returncode != 0:
         print >>sys.stderr, "cutadapt failed"
         print >>sys.stderr, errinfo
-    #print >>sys.stderr, errinfo
-    
+    print >>sys.stderr, errinfo
+    trimmed = 0 
+    discard = 0
     for line in errinfo.split("\n"):
         totalmatch = recutadapttotal.match(line)
         trimmatch = recutadapttrimmed.match(line) 
