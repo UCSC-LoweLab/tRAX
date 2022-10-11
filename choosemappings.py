@@ -82,6 +82,8 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
     newheader["RG"].append(dict())
     imperfect = 0
     extraimperfect = 0
+    if "PG" not in newheader:
+        newheader["PG"] = list()
     if  progname is  not None:
         newheader["PG"].append({"PN" :progname, "ID": progname,"VN":gitversion})
     if fqname is not None:
