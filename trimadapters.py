@@ -206,7 +206,7 @@ seqprepcounts = dict()
 cutadaptcounts = dict()
 allsamples = set()
 
-minsize = 15
+minsize = int(minlength) + int(umilength)
 outputfiles = list()
 
 prepout = ""
@@ -231,14 +231,14 @@ for currsample in sampleorder:
     if not singleendmode:
         seqprepcommmand = ""
         if umilength  > 0:
-            seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_m.fastq.gz; '
-            seqprepcommmand += "umi_tools extract --stdin="+currsample+"_m.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz 1>&2'
+            seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_m.fastq.gz '
+            seqprepcommmand += ";umi_tools extract -v 0 --stdin="+currsample+"_m.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz -L '+currsample+'_umilog.txt'
         else:
             seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_merge.fastq.gz'
 
 
         outputfiles.append(currsample+'_merge.fastq.gz')
-        #print >>sys.stderr, seqprepcommmand
+        print >>sys.stderr, seqprepcommmand
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         seqprepruns[currsample] = None
@@ -249,27 +249,28 @@ for currsample in sampleorder:
         #seqprepcommmand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
         #cutadapt -m 15 --adapter='TGGAATTCTCGGGTGCCAAGG'  Testicular_sperm/Fraction4/Fraction4_S2_L002_R1_001.fastq.gz                           | gzip -c > trimmed/Fraction4_S2_L002_R1_001_TRIM.fastq.gz                      
         if umilength > 0:
-            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_t.fastq.gz;'
-            cutadaptcommand += "umi_tools extract --stdin="+currsample+"_t.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz 1>&2'
+            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_t.fastq.gz'
+            cutadaptcommand += ";umi_tools extract --stdin="+currsample+"_t.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz -L '+currsample+'_umilog.txt'
             
         else:
             cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_trimmed.fastq.gz'
 
 
         outputfiles.append(currsample+'_trimmed.fastq.gz')
-        #print >>sys.stderr, cutadaptcommand
+        print >>sys.stderr, cutadaptcommand
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         cutadaptruns[currsample] = None
         cutadaptruns[currsample] = compressargs(cutadaptcommand, shell = True, stderr = subprocess.PIPE)
         
-
+print >>sys.stderr, "***"
 '''
 
 umi_tools extract --bc-pattern=NNNNNN --log=umi.log --stdout=output.fastq.gz 
 '''
 if not singleendmode:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
+    print >>sys.stderr, "***||"
     for samplename, command, spoutput in results:
         print >>sys.stderr, samplename +" merged"
         #print >>sys.stderr, spoutput

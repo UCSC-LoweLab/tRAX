@@ -121,6 +121,7 @@ class covline:
         self.ccounts = int(ccounts )
         self.gcounts = int(gcounts )
         self.tcounts = int(tcounts )
+        
         self.deletions = int(deletions)
         self.actualbase = actualbase
         self.percentunique = percentunique
@@ -132,6 +133,8 @@ class covline:
             self.ccounts                      
         elif self.actualbase == "G":
             self.gcounts
+        elif self.actualbase == "N":
+            pass
         else:
             print >>sys.stderr, "No base "+self.actualbase 
             sys.exit(1)
@@ -740,7 +743,7 @@ def main(**argdict):
     if argdict["minreads"] is not None:
         minreads = int(argdict["minreads"])
         
-        
+    
     trnainfo = transcriptfile(os.path.expanduser(argdict["trnafile"]))
     sampleinfo = samplefile(os.path.expanduser(argdict["samplefile"]))
     
@@ -748,9 +751,9 @@ def main(**argdict):
     #print >>sys.stderr, sum([1 - 3*sliver,sliver,sliver,sliver])
     #print >>sys.stderr, bhattacharyyadistance([1 - 3*sliver,sliver,sliver,sliver],[sliver,sliver,sliver,1 - 3*sliver])
     #sys.exit()
-    
+    print >>sys.stderr, "******"
     covcounts = readcovfile(covfile)
-    
+    print >>sys.stderr, "|||||"
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].basecounts()
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].mismatchpercent()
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].actualbase
@@ -774,7 +777,7 @@ def main(**argdict):
     
     #print scaledchitest([0, 4, 0, 232],[0, 0, 0, 105])
     
-        
+    
     clusttest = False
     if clusttest:
         #trnaclusts = readclusterfile("/projects/lowelab/users/holmes/pythonsource/trnatest/test/poscompare/M_dm_Heart_M5_minusAlkB_58pos_A_clust_groups.txt")

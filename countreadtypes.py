@@ -459,7 +459,7 @@ def printaminocounts(trnaaminofilename, sampledata,trnainfo,allcounts, sizefacto
     #aminos = list(allaminos) + list(otheraminos)
     
     aminos = trnainfo.allaminos()
-    print >>sys.stderr, aminos
+    #print >>sys.stderr, aminos
     print  >>trnaaminofile, "\t".join(replicates)
     for curramino in aminos:
         #print >>sys.stderr, curramino
@@ -690,7 +690,7 @@ def main(**argdict):
                 
                 currsample, counts = countqueue.get()
                 allcounts[currsample] = counts
-                print >>sys.stderr, currsample+":" +str(time.time()-starttime)
+                #print >>sys.stderr, currsample+":" +str(time.time()-starttime)
             
             
             pass
@@ -703,7 +703,7 @@ def main(**argdict):
     emblbiotypes  = set(itertools.chain.from_iterable(curr.emblbiotypes for curr in allcounts.values()))        
     bedtypes  = set(itertools.chain.from_iterable(curr.bedtypes for curr in allcounts.values())) 
     extraseqtypes  = set(itertools.chain.from_iterable(curr.extraseqtypes for curr in allcounts.values()))   
-    print >>sys.stderr, bedtypes
+    #print >>sys.stderr, bedtypes
     printtypefile(countfile, samples, sampledata,allcounts,trnalist, trnaloci, bedtypes, emblbiotypes,sizefactor, countfrags = countfrags , extraseqtypes = extraseqtypes)
     printrealcounts(realcountfile, samples, sampledata,allcounts,trnalist, trnaloci, bedtypes, emblbiotypes , extraseqtypes = extraseqtypes)
 

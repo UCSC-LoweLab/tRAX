@@ -548,8 +548,8 @@ def testmain(**argdict):
     #threadmode = False
     starttime = time.time()
     #print  list(curr.name for curr in trnalist)
-    print >>sys.stderr, "**||"
-    print >>sys.stderr, maxmismatches
+    #print >>sys.stderr, "**||"
+    #print >>sys.stderr, maxmismatches
     
     #sys.exit()
     if threadmode:

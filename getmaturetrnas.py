@@ -28,6 +28,7 @@ def main(**args):
     gtrnatrans = None
     prokmode = args["prokmode"]
     if args["namemap"]:
+        
         gtrnafa = open(args["namemap"], "r")
         gtrnatrans = dict()
         for currline in gtrnafa:
@@ -43,7 +44,7 @@ def main(**args):
         #sys.exit()
     elif args["gtrnafa"]:
         trnanamere = re.compile(r"^\>\S+_((?:\w+\-)?tRNA\-\w+\-[\w\?]+\-\d+\-\d+)\s+\((?:tRNAscan\-SE\s+ID:\s+)?(\S+)\)")
-
+        
         gtrnafa = open(args["gtrnafa"], "r")
         gtrnatrans = dict()
         for currline in gtrnafa:
@@ -68,12 +69,16 @@ def main(**args):
     trnadbtrnas = list()
     trnacentraltrnas = list()
     for currfile in args["trnascan"]:
+        
         if gtrnatrans:
+            #print >>sys.stderr, "||**"
             trnadbtrnas.extend(readtRNAdb(currfile, genomefile, gtrnatrans))
         else:
+            #print >>sys.stderr, "||**||"
             trnascantrnas.extend(readtRNAscan(currfile, genomefile))
             #print >>sys.stderr, len(trnascantrnas)
-            
+    #print >>sys.stderr, len(trnascantrnas)
+    #print >>sys.stderr, len(trnadbtrnas)
     #print >>sys.stderr, "||**"
     '''
     for currfile in args["trnascan"]:
@@ -97,8 +102,11 @@ def main(**args):
                 sys.exit(1)
                 pass
             
-            
-            extratrnas.append(tRNAtranscript(currseq.replace("U","T"), None, namefields[1], namefields[2], [], None, name = currname, artificialtrna = True))
+            curramino = namefields[1]
+            currac = namefields[2]
+            if curramino == "Und":
+                curramino = "Undet"
+            extratrnas.append(tRNAtranscript(currseq.replace("U","T"), None, curramino, currac, [], None, name = currname, artificialtrna = True))
     alltrnas = list(getuniquetRNAs(trnascantrnas)) + trnacentraltrnas + trnadbtrnas + extratrnas
     trnabed = None
     if args["bedfile"]:
@@ -137,6 +145,9 @@ def main(**args):
 
         
     stkfile = args["trnaalignment"]
+    if len(alltrnas) == 0:
+        print >>sys.stderr, "No trna sequences"
+        sys.exit(1)
     if args["trnaalignment"]:
         devnull = open(os.devnull, 'w')
         seqfile = tempmultifasta(((currtrans.name, currtrans.getmatureseq(addcca = not prokmode)) for currtrans in alltrnas))

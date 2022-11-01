@@ -85,16 +85,8 @@ comparisons <- lapply(comparisons,unlist)
 comparisons = combn(unique(sampleinfo),2,simplify = FALSE)
 }
 
-library(viridis)
 coldata = data.frame(condition=factor(sampleinfo))
 
-#print(ncol(readcounts))
-#print(nrow(coldata))
-#print(head(readcounts))
-
-
-#print(comparisons)
-#print("}}***||*")
 
 
 cds = DESeqDataSetFromMatrix(countData = readcounts,coldata  ,design = ~ condition)
@@ -103,13 +95,19 @@ normalizedrnas = sweep(readcounts,2,cds$sizeFactor, "/" )
 write.table(normalizedrnas,paste(experimentname,"/",experimentname,"-normalizedreadcounts.txt", sep = ""), sep = "\t")
 #print(sizefactors)
 write.table(rbind(colnames(readcounts),cds$sizeFactor),file=paste(experimentname,"/",experimentname,"-SizeFactors.txt", sep = ""), row.names=FALSE,col.names=FALSE)
+
+
+
+if(length(unique(coldata$condition)) == ncol(readcounts)) {
+q()
+}
 cds = DESeq(cds,betaPrior=TRUE)
 
 deseq2Data <- cds
 
 #not sure why this fails sometimes
 
-heatmaps = FALSE 
+heatmaps = TRUE
 if(heatmaps){
 
 
@@ -119,6 +117,9 @@ write.table(as.data.frame(assay(deseq2VST)),paste(experimentname,"/",experimentn
 deseq2rlog <- rlog(deseq2Data)  
 write.table(as.data.frame(assay(deseq2rlog)),paste(experimentname,"/",experimentname,"-rlog.txt", sep = ""), col.names=NA )
 
+
+zscores = as.data.frame(t(scale(t(normalizedrnas))))
+write.table(zscores,paste(experimentname,"/",experimentname,"-zscore.txt", sep = ""), col.names=NA )
 
 
 
@@ -165,6 +166,7 @@ write.table(alllogvals,paste(experimentname,"/",experimentname,"-logvals.txt", s
 
 
 
+
 outputformat = ".pdf"
 if(length(args) > 3){
 
@@ -188,6 +190,8 @@ currsampledata = data.frame(genename, currlogval, currprob)
 #print(head(alllogvals))
 
 if(heatmaps){
+library(viridis)
+
 #deseq2Results <- results(cds, contrasts = list(currpair[1], currpair[2]))
 #print(head(deseq2Results))
 #deseq2ResDF <- as.data.frame(deseq2Results) 
@@ -202,7 +206,7 @@ deseq2trans = sweep(deseq2trans, MARGIN=1, STATS= rowMeans(deseq2trans))
 
 deseq2trans$Gene <- rownames(deseq2trans)
 
-sigGenes <- currsampledata$genename[abs(currsampledata$currlogval) > 3 & currsampledata$currprob < .05]
+sigGenes <- currsampledata$genename[abs(currsampledata$currlogval) > 1.5 & currsampledata$currprob < .05]
 
 
 deseq2trans <- deseq2trans[deseq2trans$Gene %in% sigGenes,]
@@ -226,16 +230,60 @@ samplenames = as.character(sampledata[,1])
 #print(samplenames)
 #print(samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]])
 currsamples = samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]]
-print(currsamples)
-print(head(deseq2trans))
+#print(currsamples)
+#print(head(deseq2trans))
 deseq2trans = deseq2trans[deseq2trans$variable %in% currsamples,]
 print("()")
 
 maxscore = max(abs(deseq2trans$value))
 # Make a heatmap
-print(head(deseq2trans))
-heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "log-fold change") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
-ggsave(paste(experimentname,"/",pairname,"-deseqheatmap",".pdf",sep= ""), heatmap ) 
+#print(head(deseq2trans))
+heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "log-fold change from median") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
+#print(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))
+#print(1*length(unique(deseq2trans$Gene)))
+ggsave(paste(experimentname,"/",pairname,"-deseqlogheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
+
+
+deseq2trans = zscores
+
+deseq2trans <- as.data.frame(deseq2trans)
+
+#deseq2trans = sweep(deseq2trans, MARGIN=1, STATS= rowMeans(deseq2trans))
+#get z score
+#apply(deseq2trans, 1, scale)
+
+#print(head(deseq2trans))
+
+deseq2trans$Gene <- rownames(deseq2trans)
+#print(head(deseq2trans))
+
+#sigGenes <- currsampledata$genename[abs(currsampledata$currlogval) > 1.5 & currsampledata$currprob < .05]
+
+
+#print(head(deseq2trans))
+
+deseq2trans <- deseq2trans[deseq2trans$Gene %in% sigGenes,]
+                                                                                                       
+deseq2trans <- melt(deseq2trans, id.vars=c("Gene"))
+
+samplenames = as.character(sampledata[,1])
+#print(samplenames)
+#print(samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]])
+currsamples = samplenames[coldata$condition == currcomp[[1]] | coldata$condition == currcomp[[2]]]
+#print(currsamples)
+#print(head(deseq2trans))
+deseq2trans = deseq2trans[deseq2trans$variable %in% currsamples,]
+#print("()")
+
+maxscore = max(abs(deseq2trans$value))
+# Make a heatmap
+#print(head(deseq2trans))
+heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "Z score") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
+print(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))
+print(1*length(unique(deseq2trans$Gene)))
+ggsave(paste(experimentname,"/",pairname,"-deseqzscoreheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
+
+
 }
 
 
@@ -264,7 +312,7 @@ currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + g
 
 ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
 
-trnasampledata = currsampledata[grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE),]
+trnasampledata = currsampledata[grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE) | grepl( "tRX", as.character(currsampledata$genename), fixed = TRUE),]
 
 #print(trnasampledata)
 trnapvalcutoff = sort(trnasampledata$currprob)[10]

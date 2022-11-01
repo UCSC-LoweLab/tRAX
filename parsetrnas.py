@@ -315,24 +315,18 @@ def readtRNAdb(scanfile, genomefile, trnamap):
                 intronstart = int(fields[6]) - int(fields[2]) 
                 intronend = int(fields[7]) - int(fields[2]) + 1
             tRNAintron[currtRNA.name] = tuple([intronstart, intronend])
-
     trnaseqs = getseqdict(trnalist, faifiles = {orgname:genomefile+".fai"})
     intronseq = defaultdict(str)
     trnaloci = list()
-
+    #print >>sys.stderr, "tRNAs: "+str(len(trnalist))
+    #print >>sys.stderr, "tRNA seqs: "+str(len(trnaseqs.keys()))
     for curr in trnaseqs.iterkeys():
         currintron = None
         if curr in tRNAintron:
             
             start = tRNAintron[curr][0]
             end = tRNAintron[curr][1]
-            if curr in set(["tRNA-Arg-TCT-3-1"]):
-                #print >>sys.stderr, curr
-                #print >>sys.stderr, [start,end]
-                #print >>sys.stderr, trnaseqs[curr]
-                #print >>sys.stderr, trnaseqs[curr][:start] + trnaseqs[curr][end:]
-                #sys.exit(1)
-                pass
+
             intronseq[curr] = trnaseqs[curr][start:end]
             trnaseqs[curr] = trnaseqs[curr][:start] + trnaseqs[curr][end:]
             currintron = tRNAintron[curr]

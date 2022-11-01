@@ -135,7 +135,7 @@ aminoinfo = data.frame(aminos,threecodes,onecodes, stringsAsFactors = FALSE)
 aminoletters <- aminoinfo[match(aminoinfo[,2], levels(trnacounts$amino)),3]
 aminoletters <- aminoinfo[match(levels(trnacounts$amino),aminoinfo[,2]),3]
 
-aminoletters[is.na(aminoletters)] <- "X"
+aminoletters[is.na(aminoletters)] <- "?"
 
 
 aminoletters <-  unlist(lapply(aminoletters, utf8ToInt))
