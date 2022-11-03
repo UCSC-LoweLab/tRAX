@@ -18,7 +18,7 @@ def readmultifasta(fafile):
     if fafile == "stdin":
         fafile = sys.stdin
     elif fafile.endswith(".gz"):
-        fafile = gzip.open(fafile, "rb")
+        fafile = gzip.open(fafile, "rt", encoding='utf-8')
     else:
         fafile = open(fafile, "r")
     currloc = 0
@@ -45,7 +45,7 @@ def readmultifastq(fqfile, getnameline = False):
     if fqfile == "stdin":
         fqfile = sys.stdin
     elif fqfile.endswith(".gz"):
-        fqfile = gzip.open(fqfile, "rb")
+        fqfile = gzip.open(fqfile, "rt", encoding='utf-8')
     else:
         fqfile = open(fqfile, "r")
     currloc = 0
@@ -85,12 +85,13 @@ def fastadict(fafile):
     return seqdict
         
 def tempmultifasta(allseqs):
-    fafile = tempfile.NamedTemporaryFile(suffix=".fa")
+    fafile = tempfile.NamedTemporaryFile(suffix=".fa",mode="w+")
 
 
     for seqname, seq in allseqs:
-        fafile.write(">"+seqname+"\n")
-        fafile.write(seq+"\n")
+        print(">"+seqname+"\n", file=fafile)
+        print(seq+"\n", file=fafile)
+
     fafile.flush()
     return fafile
 def invertstrand(strand):
@@ -101,25 +102,25 @@ def invertstrand(strand):
 
 class alignment:
     def __init__(self, sequences):
-        if len(sequences.keys()) < 1:
+        if len(list(sequences.keys())) < 1:
             raise EmptyAlignException() 
         self.aligns = sequences
 
-        if max(len(curr) for curr in self.aligns.itervalues()) != min(len(curr) for curr in self.aligns.itervalues()):
-            print >>sys.stderr, "Non-matching sequence lengths in multiple alignment"
+        if max(len(curr) for curr in self.aligns.values()) != min(len(curr) for curr in self.aligns.values()):
+            print("Non-matching sequence lengths in multiple alignment", file=sys.stderr)
         #self.alignlength = len(self.aligns[self.aligns.keys()[0]])
-        self.alignlength = max(len(curr) for curr in self.aligns.itervalues())
+        self.alignlength = max(len(curr) for curr in self.aligns.values())
     def getseqlength(self, seqname):
         return len(self.aligns[seqname].replace("-",""))
     def numseqs(self):
-        return len(self.aligns.keys())
+        return len(list(self.aligns.keys()))
     def getseqnames(self):
-        return self.aligns.keys()
+        return list(self.aligns.keys())
     def getalignseq(self ,seqname):
         return self.aligns[seqname]
     def toseqdict(self):
         seqs = dict()
-        for currname, currseq in self.aligns.iteritems():
+        for currname, currseq in self.aligns.items():
             seqs[currname] = string.translate(currseq, None, "-.~")
         return seqs
     def getsubset(self, subset):
@@ -136,7 +137,7 @@ class alignment:
         newalign = defaultdict(str)
         currpoint = defaultdict(int)
         for i in range(self.alignlength):
-            for currgene in nucseqs.iterkeys():
+            for currgene in nucseqs.keys():
                 if self.aligns[currgene][i] != "-":
                     newalign[currgene] += nucseqs[currgene][currpoint[currgene]:currpoint[currgene] + 3]
                     currpoint[currgene] += 3
@@ -153,12 +154,12 @@ class alignment:
         return tempmultifasta(self.aligns)
     def fastaformat(self, prefix = ""):
         output = ""
-        for seqname, seq in self.aligns.iteritems():
+        for seqname, seq in self.aligns.items():
             output += ">"+prefix+seqname+"\n"+seq+"\n"
         return output
     def getsegment(self,start, end):
         newalign = dict()
-        for name, seq in self.aligns.iteritems():
+        for name, seq in self.aligns.items():
             newalign[name] = seq[start:end]
         return alignment(newalign)
     def getsubsets(self,windowsize, stepsize):
@@ -168,7 +169,7 @@ class alignment:
             yield self.getsegment(start,end)
     def removeemptyseqs(self):
         newalign = dict()
-        for name, seq in self.aligns.iteritems():
+        for name, seq in self.aligns.items():
             if len(string.translate(seq, None, "-.")) != 0:
                 newalign[name] = seq
         return alignment(newalign)
@@ -176,8 +177,8 @@ class alignment:
 
     def phylipformat(self):
         #print ",".join(str(curr)for curr in self.aligns.keys())
-        output = str(len(self.aligns.keys()))+ " "+str(self.alignlength)+"\n"
-        for currgene in self.aligns.iterkeys():
+        output = str(len(list(self.aligns.keys())))+ " "+str(self.alignlength)+"\n"
+        for currgene in self.aligns.keys():
             #sys.stderr.write("**"+str(currgene).ljust( 11)+"**\n")
             output += str(currgene).ljust( 14)
             output +=  self.aligns[currgene]+"\n"
@@ -186,10 +187,10 @@ class alignment:
 
 
     def nexusformat(self):
-        output = "#NEXUS\nBegin data;\nDimensions ntax="+str(len(self.aligns.keys()))+" nchar="+str(self.alignlength)+";\n"
+        output = "#NEXUS\nBegin data;\nDimensions ntax="+str(len(list(self.aligns.keys())))+" nchar="+str(self.alignlength)+";\n"
         output += "Format datatype=dna symbols=\""+"ATCG"+"\" missing=? gap=-;\n"
         output += "Matrix\n"
-        for currgene in self.aligns.iterkeys():
+        for currgene in self.aligns.keys():
             output += currgene.ljust( 11)
             output +=  self.aligns[currgene]+"\n"
         output+=";\nEnd;"    
@@ -206,25 +207,25 @@ class alignment:
 
             
     def printstk(self, name = None):
-        print "# STOCKHOLM 1.0"
+        print("# STOCKHOLM 1.0")
         if name is not None:
-            print "#=GF ID "+name
-        padlength = max(len(curr) for curr in self.aligns.iterkeys()) + 4
-        for currname, currseq in self.aligns.iteritems():
-            print string.ljust(currname,padlength ) +currseq
-        print "//"
+            print("#=GF ID "+name)
+        padlength = max(len(curr) for curr in self.aligns.keys()) + 4
+        for currname, currseq in self.aligns.items():
+            print(string.ljust(currname,padlength ) +currseq)
+        print("//")
     def printhtml(self, name = None):
-        print "<CODE>"
-        for currname, currseq in self.aligns.iteritems():
-            print currname + "\t"+currseq +"<BR/>"
-        print "</CODE>"
+        print("<CODE>")
+        for currname, currseq in self.aligns.items():
+            print(currname + "\t"+currseq +"<BR/>")
+        print("</CODE>")
     def clustalwformat(self):
         output = "CLUSTAL W 2.1 multiple sequence alignment\n\n"
         conservestring = ""
         for i in range(0, self.alignlength):
             conservestring += ":"                     
         for currpos in range(0, self.alignlength, 60):
-            for seqname, seq in self.aligns.iteritems():
+            for seqname, seq in self.aligns.items():
                 output += seqname+"\t"+seq[currpos:min([currpos+60,self.alignlength])]+"\n"
             output += "\t"+conservestring[currpos:min([currpos+60,self.alignlength])] + "\n\n"
             
@@ -237,29 +238,29 @@ class RnaAlignment(alignment):
         self.currstruct = structure
         self.energies = energies 
         self.consensus = consensus
-        self.alignlength = max(len(curr) for curr in alignseqs.values())
+        self.alignlength = max(len(curr) for curr in list(alignseqs.values()))
     def addupstream(self, seqs, struct = None):
         newseqs = dict()
         #print >>sys.stderr, seqs.keys()
-        for curr in self.aligns.iterkeys():
+        for curr in self.aligns.keys():
             newseqs[curr] = seqs[curr] + self.aligns[curr]
         if struct is None:
-            newstruct = (max(len(curr) for curr in seqs.itervalues()) * ":") + self.currstruct
+            newstruct = (max(len(curr) for curr in seqs.values()) * ":") + self.currstruct
         else:
             newstruct = struct + self.currstruct
         return RnaAlignment(newseqs, newstruct)
     def adddownstream(self, seqs, struct = None):
         newseqs = dict()
-        for curr in self.aligns.iterkeys():
+        for curr in self.aligns.keys():
             newseqs[curr] =  self.aligns[curr]+  seqs[curr]
         if struct is None:
-            newstruct = self.currstruct + (max(len(curr) for curr in seqs.itervalues()) * ":")
+            newstruct = self.currstruct + (max(len(curr) for curr in seqs.values()) * ":")
         else:
             newstruct = self.currstruct + struct
         return RnaAlignment(newseqs, newstruct)
     def addmargin(self, length):
         newseqs = dict()
-        for curr in self.aligns.iterkeys():
+        for curr in self.aligns.keys():
             newseqs[curr] =  length*"N" + self.aligns[curr]+ length*"N"
         newstruct = length * ":" + self.currstruct + length * ":"
         if self.consensus is None:
@@ -270,7 +271,7 @@ class RnaAlignment(alignment):
 
     def viennaformat(self):
         output = ""
-        for currseq in self.aligns.iterkeys():
+        for currseq in self.aligns.keys():
             output += ">"+currseq+"\n"
             output += self.aligns[currseq]+"\n"
             output += self.currstruct+"\n"
@@ -281,28 +282,28 @@ class RnaAlignment(alignment):
         viennafile.flush()
         return viennafile
     def printstk(self, name = None):
-        print "# STOCKHOLM 1.0"
+        print("# STOCKHOLM 1.0")
         if name is not None:
-            print "#=GF ID "+name
-        for currname, currseq in self.aligns.iteritems():
-            print currname + "\t"+currseq
+            print("#=GF ID "+name)
+        for currname, currseq in self.aligns.items():
+            print(currname + "\t"+currseq)
         structline = ""
         structpos = 0
         secpos = 0
-        print "#=GC SS_cons\t"+self.currstruct
-        print "//"
+        print("#=GC SS_cons\t"+self.currstruct)
+        print("//")
     def printhtml(self, name = None):
-        for currname, currseq in self.aligns.iteritems():
-            print currname + "\t"+currseq +"</BR>"
+        for currname, currseq in self.aligns.items():
+            print(currname + "\t"+currseq +"</BR>")
         structline = ""
         structpos = 0
         secpos = 0
-        print "#=GC SS_cons\t"+self.currstruct+"</BR>"
-        print "//"+"</BR>"
+        print("#=GC SS_cons\t"+self.currstruct+"</BR>")
+        print("//"+"</BR>")
 def convertmaturealign(rnaalign):
     newseqs = dict()
     newalign = rnaalign.struct
-    for name, seq in rnaalign.aligns.iteritems():
+    for name, seq in rnaalign.aligns.items():
         newseqs[name]
     
 def readrnastk(stk):
@@ -467,7 +468,7 @@ class samplefile:
                     replicatelist.append(fields[1])
             
             #bamlist = list(curr + "_sort.bam" for curr in samplefiles.iterkeys())
-            samplenames = list(curr  for curr in samplefiles.iterkeys())
+            samplenames = list(curr  for curr in samplefiles.keys())
             if bamdir is None:
                 bamdir = "./"
             self.bamdir = bamdir
@@ -477,8 +478,8 @@ class samplefile:
             self.replicatelist = replicatelist
             #self.bamlist = list(curr+ "_sort.bam" for curr in samplelist)
         except IOError:
-            print >>sys.stderr, "Cannot read sample file "+samplefilename
-            print >>sys.stderr, "exiting..."
+            print("Cannot read sample file "+samplefilename, file=sys.stderr)
+            print("exiting...", file=sys.stderr)
             sys.exit(1)
     def getsamples(self):
         return self.samplelist
@@ -497,7 +498,7 @@ class samplefile:
     def getrepsamples(self, replicate):
         return list(currsample for currsample in self.samplelist if self.replicatename[currsample] == replicate)
     def getfastqsample(self, fastqname):
-        for currsample in self.samplefiles.iterkeys():
+        for currsample in self.samplefiles.keys():
             if self.samplefiles[currsample] == fastqname:
                 return currsample
         
@@ -506,8 +507,8 @@ def getsizefactors( sizefactorfilename):
     try:
         sizefactorfile = open(sizefactorfilename)
     except IOError as err:
-        print >>sys.stderr, "Cannot read size factor file "+sizefactorfilename
-        print >>sys.stderr, "check Rlog.txt"
+        print("Cannot read size factor file "+sizefactorfilename, file=sys.stderr)
+        print("check Rlog.txt", file=sys.stderr)
         sys.exit(1)
     sizefactors = dict()
     bamheaders =list()
@@ -666,7 +667,7 @@ def readfeatures(filename, orgdb="genome", seqfile= None, removepseudo = False):
         #print >>sys.stderr, removepseudo
         return (curr for curr in readgtf(filename, orgdb, seqfile, filterpsuedo = removepseudo, filtertypes =set(['retained_intron','antisense','lincRNA']) ))
     else:
-        print >>sys.stderr, filename+" not valid feature file"
+        print(filename+" not valid feature file", file=sys.stderr)
         sys.exit()
 
 
@@ -676,7 +677,7 @@ def readgtf(filename, orgdb="genome", seqfile= None, filterpsuedo = False, repla
     if filename == "stdin":
         bedfile = sys.stdin
     elif filename.endswith(".gz"):
-        bedfile = gzip.open(filename, 'rb')
+        bedfile = gzip.open(filename, 'rt', encoding='utf-8')
     else:
         bedfile = open(filename, "r")
     
@@ -722,11 +723,11 @@ def readgtf(filename, orgdb="genome", seqfile= None, filterpsuedo = False, repla
                 #print >>sys.stderr, biotype
                 genesource = biotype
             if not (fields[6] == "+" or fields[6] == "-"):
-                print >>sys.stderr, "strand error in "+filename
+                print("strand error in "+filename, file=sys.stderr)
                 skippedlines += 1
             elif not (fields[3].isdigit() and fields[4].isdigit()):
-                print >>sys.stderr, "non-number coordinates in "+filename
-                print >>sys.stderr, currline
+                print("non-number coordinates in "+filename, file=sys.stderr)
+                print(currline, file=sys.stderr)
                 
                 skippedlines += 1
             else:
@@ -739,7 +740,7 @@ def readbed(filename, orgdb="genome", seqfile= None, includeintrons = False):
     if filename == "stdin":
         bedfile = sys.stdin
     elif filename.endswith(".gz"):
-        bedfile = gzip.open(filename, 'rb')
+        bedfile = gzip.open(filename, 'rt', encoding='utf-8')
     else:
         bedfile = open(filename, "r")
     skippedlines = 0
@@ -756,11 +757,11 @@ def readbed(filename, orgdb="genome", seqfile= None, includeintrons = False):
             else:
                 strand = fields[5]
             if not (strand == "+" or strand == "-"):
-                print >>sys.stderr, "strand error in "+filename
+                print("strand error in "+filename, file=sys.stderr)
                 skippedlines += 1
             elif not (fields[1].isdigit() and fields[2].isdigit()):
-                print >>sys.stderr, "non-number coordinates in "+filename
-                print >>sys.stderr, currline
+                print("non-number coordinates in "+filename, file=sys.stderr)
+                print(currline, file=sys.stderr)
                 skippedlines += 1
             else:
                 if includeintrons and len(fields) > 7:
@@ -770,7 +771,7 @@ def readbed(filename, orgdb="genome", seqfile= None, includeintrons = False):
                 yield GenomeRange( orgdb, fields[0],fields[1],fields[2],strand, name = fields[3], fastafile = seqfile, data = data)
     
     if skippedlines > 0:
-        print >>sys.stderr, "skipped "+str(skippedlines)+" in "+filename
+        print("skipped "+str(skippedlines)+" in "+filename, file=sys.stderr)
 def ifelse(arg, trueres,falseres):
     if arg:
         return trueres
@@ -1003,7 +1004,7 @@ def getbam(bamfile, chromrange = None, primaryonly = False, singleonly = False, 
             #continue
             if currline.aend is None:
                 continue
-                print >>sys.stderr, currline
+                print(currline, file=sys.stderr)
             if not allowindels and len(currline.cigar) > 1:
                 continue
             yield BamRead( currline,"genome",rname,currline.pos,currline.aend,strand, name = currline.qname)
@@ -1098,8 +1099,8 @@ def getseqs(fafile,rangedict, faindex = None):
         try:
             faifile = fastaindex(fafile, faindex)
         except IOError as e:
-            print >>sys.stderr, "Cannot read fasta file "+fafile
-            print >>sys.stderr, "Ensure that file "+fafile +" exits and generate fastaindex "+faindex+" with samtools faidx"
+            print("Cannot read fasta file "+fafile, file=sys.stderr)
+            print("Ensure that file "+fafile +" exits and generate fastaindex "+faindex+" with samtools faidx", file=sys.stderr)
             sys.exit(1)
         return faifile.getseqs(rangedict)
     genomefile = open(fafile, "r")
@@ -1114,7 +1115,7 @@ def getseqs(fafile,rangedict, faindex = None):
             #print >>sys.stderr, currseq
             currloc = 0
         else:
-            for currname, location in rangedict.iteritems():
+            for currname, location in rangedict.items():
                 if currseq == location.chrom:
                     
                     chromstart = location.start
@@ -1135,7 +1136,7 @@ def getseqs(fafile,rangedict, faindex = None):
             currloc += len(line)
     genomefile.close()
     finalseqs = dict()
-    for currname in allseqs.iterkeys():
+    for currname in allseqs.keys():
         #allseqs[currname] = allseqs[currname].upper()
         if (rangedict[currname].strand == "-"):
             seq = list(allseqs[currname].upper())
@@ -1144,12 +1145,12 @@ def getseqs(fafile,rangedict, faindex = None):
             finalseqs[currname]  = ''.join(comp[base] for base in seq)
         else:
             finalseqs[currname] = allseqs[currname].upper()
-    for currseq in rangedict.iterkeys():
+    for currseq in rangedict.keys():
         if currseq not in finalseqs:
             #print >>sys.stderr, "**"
             #print >>sys.stderr, fafile
             
-            print >>sys.stderr, "No sequence extracted for "+rangedict[currseq].dbname+"."+rangedict[currseq].chrom+":"+str(rangedict[currseq].start)+"-"+str(rangedict[currseq].end)
+            print("No sequence extracted for "+rangedict[currseq].dbname+"."+rangedict[currseq].chrom+":"+str(rangedict[currseq].start)+"-"+str(rangedict[currseq].end), file=sys.stderr)
     return finalseqs        
     
 class fastaindex:
@@ -1168,7 +1169,7 @@ class fastaindex:
             self.seqlinesize[fields[0]] = int(fields[3])
             self.seqlinebytes[fields[0]] = int(fields[4])
     def getchrombed(self, dbname = 'genome'):
-        for curr in self.chromsize.iterkeys():
+        for curr in self.chromsize.keys():
             yield GenomeRange(dbname,curr,0,self.chromsize[curr],name=curr, strand = "+")
     def getseek(self, currchrom,loc):
         #print >>sys.stderr, (self.seqlinebytes[currchrom] - self.seqlinesize[currchrom])
@@ -1189,7 +1190,7 @@ class fastaindex:
     def getseqs(self,  rangedict):
         genomefile = open(self.fafile, "r")
         allseqs = dict()
-        for currname, currregion in rangedict.iteritems():
+        for currname, currregion in rangedict.items():
             try:
                 currchrom = currregion.chrom
                 #faskip = 
@@ -1205,7 +1206,7 @@ class fastaindex:
                 pass
         genomefile.close()
         finalseqs = dict()
-        for currname in allseqs.iterkeys():
+        for currname in allseqs.keys():
             if allseqs[currname] is None:
                 continue
             #print >>sys.stderr, currname
@@ -1303,8 +1304,8 @@ def revcom(sequence):
 def get_location(program, allowfail = False):
     progloc = find_executable(program)
     if find_executable(program) is None and not allowfail:
-        print >>sys.stderr, "Could not find "+program+" in path"
-        print >>sys.stderr, "Aborting"
+        print("Could not find "+program+" in path", file=sys.stderr)
+        print("Aborting", file=sys.stderr)
         sys.exit(1)
     else:
         return progloc
@@ -1313,13 +1314,13 @@ def getgithash(scriptdir):
     gitloc = get_location("git")
     
     if gitloc is None:
-        print >>sys.stderr, "Cannot find git in path"
-        print >>sys.stderr, "Recording of versioning not possible"
-    gitjob = subprocess.Popen([gitloc,"--git-dir="+scriptdir+"/.git","rev-parse","HEAD"],stdout = subprocess.PIPE,stderr = subprocess.STDOUT )
+        print("Cannot find git in path", file=sys.stderr)
+        print("Recording of versioning not possible", file=sys.stderr)
+    gitjob = subprocess.Popen([gitloc,"--git-dir="+scriptdir+"/.git","rev-parse","HEAD"],stdout = subprocess.PIPE,stderr = subprocess.STDOUT,universal_newlines=True  )
     githash = gitjob.communicate()[0].rstrip()
     if gitjob.returncode != 0:
         githash = "Cannot find git hash"
-    gitjob = subprocess.Popen([gitloc,"--git-dir="+scriptdir+"/.git","describe"],stdout = subprocess.PIPE,stderr = subprocess.STDOUT )
+    gitjob = subprocess.Popen([gitloc,"--git-dir="+scriptdir+"/.git","describe"],stdout = subprocess.PIPE,stderr = subprocess.STDOUT,universal_newlines=True  )
     gitversion = gitjob.communicate()[0].rstrip()
     if gitjob.returncode != 0:
         gitversion = "Cannot find git version"

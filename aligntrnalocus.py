@@ -28,13 +28,13 @@ def main(**args):
     #print lociseqs
     #lociseqfile = tempmultifasta(lociseqs)
     devnull = open(os.devnull, 'w')
-    seqfile = tempmultifasta(lociseqs.iteritems())
+    seqfile = tempmultifasta(iter(lociseqs.items()))
     cmcommand = ['cmalign', "-o", stkfile,"--nonbanded","--notrunc", "-g",trnacmfile,seqfile.name]
     #print >>sys.stderr, " ".join(cmcommand)
     cmrun = subprocess.Popen(cmcommand, stdout = devnull)
     result = cmrun.wait()
     if result:
-        print >>sys.stderr, "Failure to align tRNAs"
+        print("Failure to align tRNAs", file=sys.stderr)
         sys.exit(1)
     seqfile.close()
     devnull.close()

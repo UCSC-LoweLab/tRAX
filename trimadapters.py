@@ -27,17 +27,17 @@ def updatemanifest(indexfilename, runname, runfile):
     filelocs = filelocs
     filelocs[runname] = runfile
     outfile = open(indexfilename, "w") 
-    for currname in filelocs.iterkeys():
-           print >>outfile, currname+"\t"+filelocs[currname]
+    for currname in filelocs.keys():
+           print(currname+"\t"+filelocs[currname], file=outfile)
            
 
 def runrscript(*script):
-    print >>sys.stderr, "Rscript "+" ".join(script)
+    print("Rscript "+" ".join(script), file=sys.stderr)
 
-    retcode = subprocess.call("Rscript "+" ".join(script), shell=True,  stderr = subprocess.STDOUT)
+    retcode = subprocess.call("Rscript "+" ".join(script), shell=True,  stderr = subprocess.STDOUT, universal_newlines=True)
 
     if retcode > 0:
-        print >>sys.stderr, "R script "+script[0]+" failed"
+        print("R script "+script[0]+" failed", file=sys.stderr)
 
         
         #sys.exit()
@@ -46,7 +46,7 @@ def runrscript(*script):
 def subprocesspool(argnames):
     samplename = argnames[0]
     args = argnames[1]
-    process = subprocess.Popen(*args[0], **args[1])
+    process = subprocess.Popen(*args[0], **args[1], universal_newlines=True)
     process.wait()
     return samplename," ".join(args[0]),  process
 def compressargs( *args, **kwargs):
@@ -58,8 +58,8 @@ def readseqprep(processoutput):
     output = processoutput.communicate()
     errinfo = output[1]
     if processoutput.returncode != 0:
-        print >>sys.stderr, "seqprep failed"
-        print >>sys.stderr, errinfo
+        print("seqprep failed", file=sys.stderr)
+        print(errinfo, file=sys.stderr)
     
     #errinfo
     for line in errinfo.split("\n"):
@@ -85,9 +85,9 @@ def readcutadapt(processoutput):
     output = processoutput.communicate()
     errinfo = output[1]
     if processoutput.returncode != 0:
-        print >>sys.stderr, "cutadapt failed"
-        print >>sys.stderr, errinfo
-    print >>sys.stderr, errinfo
+        print("cutadapt failed", file=sys.stderr)
+        print(errinfo, file=sys.stderr)
+    print(errinfo, file=sys.stderr)
     trimmed = 0 
     discard = 0
     for line in errinfo.split("\n"):
@@ -193,8 +193,8 @@ for currline in open(seqprepfile):
 
 
 if len(sampleorder) < 1 and len(cutadaptorder) < 1:
-    print >>sys.stderr, "Failed to read "+seqprepfile
-    print >>sys.stderr, "Perhaps you failed to specify --singleend mode?"
+    print("Failed to read "+seqprepfile, file=sys.stderr)
+    print("Perhaps you failed to specify --singleend mode?", file=sys.stderr)
     sys.exit(1)
 
     
@@ -210,10 +210,10 @@ minsize = int(minlength) + int(umilength)
 outputfiles = list()
 
 prepout = ""
-for currsample in samplefiles.iterkeys():
+for currsample in samplefiles.keys():
     for currfile in samplefiles[currsample]:
         if not os.path.isfile(currfile):
-            print >>sys.stderr, currfile +" does not exist"
+            print(currfile +" does not exist", file=sys.stderr)
             sys.exit(1)
 seqprepruns = dict()
 cutadaptruns = dict()
@@ -238,11 +238,11 @@ for currsample in sampleorder:
 
 
         outputfiles.append(currsample+'_merge.fastq.gz')
-        print >>sys.stderr, seqprepcommmand
+        print(seqprepcommmand, file=sys.stderr)
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         seqprepruns[currsample] = None
-        seqprepruns[currsample] = compressargs(seqprepcommmand, shell = True, stderr = subprocess.PIPE)
+        seqprepruns[currsample] = compressargs(seqprepcommmand, shell = True, stderr = subprocess.PIPE, universal_newlines=True)
 
     else:
         cutadaptcommand = ""
@@ -257,22 +257,22 @@ for currsample in sampleorder:
 
 
         outputfiles.append(currsample+'_trimmed.fastq.gz')
-        print >>sys.stderr, cutadaptcommand
+        print(cutadaptcommand, file=sys.stderr)
         #bowtiecommand = bowtiecommand + ' | '+scriptdir+'choosemappings.py '+trnafile+' | samtools sort - '+outfile
         
         cutadaptruns[currsample] = None
-        cutadaptruns[currsample] = compressargs(cutadaptcommand, shell = True, stderr = subprocess.PIPE)
+        cutadaptruns[currsample] = compressargs(cutadaptcommand, shell = True, stderr = subprocess.PIPE, universal_newlines=True)
         
-print >>sys.stderr, "***"
+print("***", file=sys.stderr)
 '''
 
 umi_tools extract --bc-pattern=NNNNNN --log=umi.log --stdout=output.fastq.gz 
 '''
 if not singleendmode:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
-    print >>sys.stderr, "***||"
+    print("***||", file=sys.stderr)
     for samplename, command, spoutput in results:
-        print >>sys.stderr, samplename +" merged"
+        print(samplename +" merged", file=sys.stderr)
         #print >>sys.stderr, spoutput
         seqprepcounts[samplename], errinfo = readseqprep(spoutput)
         prepout += samplename +"\n"
@@ -282,7 +282,7 @@ else:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, cutadaptruns[currsample]]) for currsample in sampleorder))
     for samplename,  command, caoutput in results:
         
-        print >>sys.stderr, samplename +" trimmed"
+        print(samplename +" trimmed", file=sys.stderr)
         cutadaptcounts[samplename], errinfo = readcutadapt(caoutput)
         prepout += samplename+"\n"
         prepout += command+"\n"
@@ -352,19 +352,19 @@ if not singleendmode:
     logfile = open(runname+"_log.txt", "w")
     replicatefile = open(runname+"_manifest.txt", "w")
     for i, curr in enumerate(sampleorder):
-        print >>replicatefile, curr+"\t"+outputfiles[i]
-    print >>samplefile,"\t".join(sampleorder)
+        print(curr+"\t"+outputfiles[i], file=replicatefile)
+    print("\t".join(sampleorder), file=samplefile)
     for currtype in ["merged","unmerged","discarded"]:
-        print >>samplefile,currtype+"\t"+"\t".join(str(seqprepcounts[currsample][currtype]) for currsample in sampleorder)
+        print(currtype+"\t"+"\t".join(str(seqprepcounts[currsample][currtype]) for currsample in sampleorder), file=samplefile)
         
     samplefile.close()
-    print >>logfile ,"samplefile: "+seqprepfile
-    print >>logfile ,"first adapter: "+ firadapter
-    print >>logfile ,"second adapter: "+ secadapter
-    print >>logfile ,"output files: "+ ",".join(outputfiles)
-    print >>logfile ," ".join(sys.argv)
-    print >>logfile ,"************************"
-    print >>logfile ,prepout
+    print("samplefile: "+seqprepfile, file=logfile)
+    print("first adapter: "+ firadapter, file=logfile)
+    print("second adapter: "+ secadapter, file=logfile)
+    print("output files: "+ ",".join(outputfiles), file=logfile)
+    print(" ".join(sys.argv), file=logfile)
+    print("************************", file=logfile)
+    print(prepout, file=logfile)
 
 
     logfile.close()    
@@ -374,18 +374,18 @@ else:
     logfile = open(runname+"_log.txt", "w")
     replicatefile = open(runname+"_manifest.txt", "w")
     for i, curr in enumerate(cutadaptorder):
-        print >>replicatefile, curr+"\t"+outputfiles[i]
-    print >>samplefile,"\t".join(cutadaptorder)
+        print(curr+"\t"+outputfiles[i], file=replicatefile)
+    print("\t".join(cutadaptorder), file=samplefile)
     for currtype in ["trimmed","untrimmed","discarded"]:
-        print >>samplefile,currtype+"\t"+"\t".join(str(cutadaptcounts[currsample][currtype]) for currsample in cutadaptorder)
+        print(currtype+"\t"+"\t".join(str(cutadaptcounts[currsample][currtype]) for currsample in cutadaptorder), file=samplefile)
         
     samplefile.close()
-    print >>logfile ,"samplefile: "+seqprepfile
-    print >>logfile ,"adapter: "+ firadapter
-    print >>logfile ,"output files: "+ ",".join(outputfiles)
-    print >>logfile ," ".join(sys.argv)
-    print >>logfile ,"************************"
-    print >>logfile ,prepout
+    print("samplefile: "+seqprepfile, file=logfile)
+    print("adapter: "+ firadapter, file=logfile)
+    print("output files: "+ ",".join(outputfiles), file=logfile)
+    print(" ".join(sys.argv), file=logfile)
+    print("************************", file=logfile)
+    print(prepout, file=logfile)
 
     logfile.close()
     runrscript(scriptdir+"/featuretypesreal.R",runname+"_ca.txt",runname+"_ca.pdf")

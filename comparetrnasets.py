@@ -54,7 +54,7 @@ def multifasta(allseqs, filename):
     fafile = open(filename, "w")
 
 
-    for seqname, seq in allseqs.iteritems():
+    for seqname, seq in allseqs.items():
         fafile.write(">"+seqname+"\n")
         fafile.write(seq+"\n")
     fafile.flush()
@@ -180,7 +180,7 @@ def traxtrnafile(logfoldchange, pvalfile, countfile, trnas, pvalcutoff = .05, mi
         trnasums[rowname][rowtype] = sum(float(curr) for curr in fields[1:])
     
     #print >>sys.stderr, trnas
-    samplenames = pvals.keys()
+    samplenames = list(pvals.keys())
     #print >>sys.stderr, samplenames
     
 
@@ -278,7 +278,7 @@ def traxgenefile(logfoldchange, pvalfile, countfile, genes, pvalcutoff = .05, mi
         trnasums[rowname][rowtype] = sum(float(curr) for curr in fields[1:])
     
     #print >>sys.stderr, trnas
-    samplenames = pvals.keys()
+    samplenames = list(pvals.keys())
     #print >>sys.stderr, samplenames
     
 
@@ -347,9 +347,9 @@ def comparesets(trnalistone, trnalisttwo,trnastk, positionnums):
     #print ",".join(trnalisttwo)
     basediffs = sorted(newpositions, key = lambda x: baseprobs[x], reverse = True)
     for i in range(0,5):
-        print basediffs[i]
-        print "\t"+ freqline(firfreqcounts[basediffs[i]])
-        print "\t"+ freqline(secfreqcounts[basediffs[i]])
+        print(basediffs[i])
+        print("\t"+ freqline(firfreqcounts[basediffs[i]]))
+        print("\t"+ freqline(secfreqcounts[basediffs[i]]))
         
         
 def printseqs(pairname, positivelist, negativelist, neutrallist,genomefile, filterlabel = None):
@@ -445,8 +445,8 @@ def main(**argdict):
         allgenes = list(curr for curr in allgenes if genetypes[curr] == filtertype)
         random.shuffle(allgenes)
         
-        poslength = len(posgenes.keys())
-        neglength = len(minusgenes.keys())
+        poslength = len(list(posgenes.keys()))
+        neglength = len(list(minusgenes.keys()))
         posrand = allgenes[0:poslength]
         negrand = allgenes[poslength: poslength + neglength]
         neutrand = allgenes[poslength + neglength:]

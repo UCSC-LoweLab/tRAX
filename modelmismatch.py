@@ -136,7 +136,7 @@ class covline:
         elif self.actualbase == "N":
             pass
         else:
-            print >>sys.stderr, "No base "+self.actualbase 
+            print("No base "+self.actualbase, file=sys.stderr) 
             sys.exit(1)
         
         self.total = self.acounts +self.ccounts +self.gcounts +self.tcounts +self.deletions 
@@ -185,7 +185,7 @@ class positiondist:
     def __init__(self,nuclist):
         self.freqlists = nuclist
         #print >>sys.stderr, nuclist.keys()
-        self.length = max(len(nuclist[curr]) for curr in nuclist.iterkeys())
+        self.length = max(len(nuclist[curr]) for curr in nuclist.keys())
         
     def getmeans(self):
         for currbase in freqlists:
@@ -196,9 +196,9 @@ class positiondist:
             delmean = sum(self.freqlists["0"]) / self.length
         return {"A":amean,"T":tmean,"C":cmean,"G":gmean,"-":delmean}
     def printtable(self, output = sys.stdout):
-        print "\t".join(["A","T","C","G"])
+        print("\t".join(["A","T","C","G"]))
         for i in range(length):
-            print "\t".join([self.freqlists["A"][i],self.freqlists["T"][i],self.freqlists["C"][i],self.freqlists["G"][i]])
+            print("\t".join([self.freqlists["A"][i],self.freqlists["T"][i],self.freqlists["C"][i],self.freqlists["G"][i]]))
 
 
 def scalecounts(secset, firset):
@@ -268,10 +268,10 @@ class covaggregate:
         countdict = defaultdict(list)
         for currcov in self.covlines: 
             currdict = currcov.percentdict(pseudocounts = .01)
-            for currbase in currdict.iterkeys():
+            for currbase in currdict.keys():
                 countdict[currbase].append(currdict[currbase])
         avgdict = dict()
-        for currbase in countdict.iterkeys():
+        for currbase in countdict.keys():
             avgdict[currbase] = (1.*sum(countdict[currbase]))/len(countdict[currbase])
         return avgdict
     def combineidentity(self):
@@ -334,10 +334,10 @@ class covcomparison:
         pval, chiscore = self.chisquare()
         eucdist = self.eucliddist()
         entropy = self.countentropy()
-        print self.firdata.basecounts()
-        print self.secdata.basecounts()  
+        print(self.firdata.basecounts())
+        print(self.secdata.basecounts())  
         #print list(scalecounts(self.secdata.basecounts(), self.firdata.basecounts()))
-        print "\t".join([self.firpos.Sample, self.firpos.Feature,self.firpos.position,self.secpos.Sample, self.secpos.Feature,self.secpos.position,str(eucdist),str(entropy),str(pval),str(chiscore)])
+        print("\t".join([self.firpos.Sample, self.firpos.Feature,self.firpos.position,self.secpos.Sample, self.secpos.Feature,self.secpos.position,str(eucdist),str(entropy),str(pval),str(chiscore)]))
     def shufflecomparison(self):
         newfirst = self.firdata.shufflecounts()
         newsec = self.secdata.shufflecounts()
@@ -540,7 +540,7 @@ def gettrnainfo(outfile, covcounts, positions, trnainfo,sampleinfo,mismatchthres
                     #print >>sys.stderr, covcounts.getpos(currpos).mismatchpercent()
                     #print >>sys.stderr, mismatchpercents[currpos.Feature][currpos.position]
                     pass
-    print >>outfile, "\t".join(currposition for currposition in positions)
+    print("\t".join(currposition for currposition in positions), file=outfile)
     positionmismatches = defaultdict(set)
     for currposition in positions:
         for currtrna in trnainfo.gettranscripts():
@@ -555,11 +555,11 @@ def gettrnainfo(outfile, covcounts, positions, trnainfo,sampleinfo,mismatchthres
                 #print >>sys.stderr, mismatchlists[currtrna][currposition]
                 
                 pass
-        print >>outfile, currtrna +"\t"+"\t".join(str(mismatchcounts[currtrna][currposition])+"/"+str(totalcounts[currtrna][currposition]) for currposition in positions)
+        print(currtrna +"\t"+"\t".join(str(mismatchcounts[currtrna][currposition])+"/"+str(totalcounts[currtrna][currposition]) for currposition in positions), file=outfile)
    
     for currposition in positions:
         if len(positionmismatches[currposition]) > 1:
-            print >>sys.stderr, currposition+":"+str(positionmismatches[currposition])
+            print(currposition+":"+str(positionmismatches[currposition]), file=sys.stderr)
         
         
 def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True, shufflemode = False, drawmode = False):
@@ -574,7 +574,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
     posmismatch = defaultdict(int)
     
     
-    print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"])
+    print("\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"]), file=outfile)
     
     for groupname, samplelist, trnalist, poslist in pairgroup:
         
@@ -661,7 +661,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                    print >>sys.stderr, "\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),"["+",".join(str(curr) for curr in currpair.firdata.basecounts())+"]",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),"["+",".join(str(curr) for curr in currpair.secdata.basecounts())+"]",str(currentropy),str(bhatd),str(hdistance),str(pval),str(chiscore)])
 
                '''
-               print >>outfile, "\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,currpair.firdata.actualbase,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),""+",".join(str(curr) for curr in currpair.firdata.basecounts())+"",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,currpair.secdata.actualbase,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),""+",".join(str(curr) for curr in currpair.secdata.basecounts())+"",str(currentropy),str(bhatd),str(hdistance),str(pval),str(chiscore)])
+               print("\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,currpair.firdata.actualbase,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),""+",".join(str(curr) for curr in currpair.firdata.basecounts())+"",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,currpair.secdata.actualbase,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),""+",".join(str(curr) for curr in currpair.secdata.basecounts())+"",str(currentropy),str(bhatd),str(hdistance),str(pval),str(chiscore)]), file=outfile)
                #currpair.compareprint() 
                if currentropy > 1:
                    posmismatch[currpair.firpos.position] += 1
@@ -715,7 +715,7 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, pairfile =
             pass
             #print >>outfile, "\t".join([groupname,currsample,currtrna,currpos,",".join(str(curr) for curr in currset.basecounts())])
     #print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"])
-    print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","firsamples","fircounts","secname","secpercent","secsamples","seccounts","bdist"])
+    print("\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","firsamples","fircounts","secname","secpercent","secsamples","seccounts","bdist"]), file=outfile)
     if pairfile is not None:
         allpairs = readpairfile(pairfile)
     for currtrna in alltrnas:
@@ -730,7 +730,7 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, pairfile =
                 #print >>sys.stderr, "**"
                 firdata = posinfo[tuple([currtrna,currpos,firsample])]
                 secdata = posinfo[tuple([currtrna,currpos,secsample])]
-                print >>outfile, "\t".join([currtrna+"_pos"+currpos,firsample,currtrna,currpos,str(firdata.refbase()),str(firdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in firdata.basecounts()),secsample ,str(secdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in secdata.basecounts()),str(bhattacharyyadistance(firdata.basecounts(), secdata.basecounts()))])             
+                print("\t".join([currtrna+"_pos"+currpos,firsample,currtrna,currpos,str(firdata.refbase()),str(firdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in firdata.basecounts()),secsample ,str(secdata.combineidentity()),str(firdata.posnum()),",".join(str(curr) for curr in secdata.basecounts()),str(bhattacharyyadistance(firdata.basecounts(), secdata.basecounts()))]), file=outfile)             
              
 
     
@@ -751,9 +751,9 @@ def main(**argdict):
     #print >>sys.stderr, sum([1 - 3*sliver,sliver,sliver,sliver])
     #print >>sys.stderr, bhattacharyyadistance([1 - 3*sliver,sliver,sliver,sliver],[sliver,sliver,sliver,1 - 3*sliver])
     #sys.exit()
-    print >>sys.stderr, "******"
+    print("******", file=sys.stderr)
     covcounts = readcovfile(covfile)
-    print >>sys.stderr, "|||||"
+    print("|||||", file=sys.stderr)
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].basecounts()
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].mismatchpercent()
     #print >>sys.stderr, covcounts.covdict[covpos("M_dm_Heart_M6_minusAlkB","tRNA-Leu-CAG-1","34")].actualbase
@@ -782,8 +782,8 @@ def main(**argdict):
     if clusttest:
         #trnaclusts = readclusterfile("/projects/lowelab/users/holmes/pythonsource/trnatest/test/poscompare/M_dm_Heart_M5_minusAlkB_58pos_A_clust_groups.txt")
         trnaclusts = readclusterfile("/projects/lowelab/users/holmes/pythonsource/trnatest/test/poscompare/tRNA-Ala-TGC-6_48pos_A_clust_groups.txt")
-        for currclust in trnaclusts.iterkeys():
-            print  "cluster "+str(currclust)
+        for currclust in trnaclusts.keys():
+            print("cluster "+str(currclust))
             lista = list()
             listc = list()
             listg = list()
@@ -808,11 +808,11 @@ def main(**argdict):
                 listg.append(perccounts[2])
                 listt.append(perccounts[3])
                 #aminos[currtrna.split("-")[1]] += 1
-            print "A: "+twopos(np.average(lista)) +"+-"+ twopos(np.std(lista))
-            print "C: "+twopos(np.average(listc)) +"+-"+ twopos(np.std(listc))
-            print "G: "+twopos(np.average(listg)) +"+-"+ twopos(np.std(listg))
-            print "T: "+twopos(np.average(listt)) +"+-"+ twopos(np.std(listt))
-            for curramino in aminos.iterkeys():
+            print("A: "+twopos(np.average(lista)) +"+-"+ twopos(np.std(lista)))
+            print("C: "+twopos(np.average(listc)) +"+-"+ twopos(np.std(listc)))
+            print("G: "+twopos(np.average(listg)) +"+-"+ twopos(np.std(listg)))
+            print("T: "+twopos(np.average(listt)) +"+-"+ twopos(np.std(listt)))
+            for curramino in aminos.keys():
                 #print curramino+":" +str(aminos[curramino])
                 pass
             for curr in nucbases:

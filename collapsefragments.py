@@ -61,14 +61,14 @@ class prunedict:
         #print >>sys.stderr, "**"
         newdict = defaultdict(int) 
         trimmed = 0
-        for curr in self.counts.iterkeys():
+        for curr in self.counts.keys():
             if self.counts[curr] > self.trimcutoff:
                 newdict[curr] = self.counts[curr]
             else:
                 trimmed += 1
         self.trimmed += trimmed
         #print >>sys.stderr, str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff)
-        self.totalkeys = len(self.counts.keys())
+        self.totalkeys = len(list(self.counts.keys()))
         self.counts = newdict
         
     def __getitem__(self, key):
@@ -86,7 +86,7 @@ class prunedict:
             if self.totalkeys > self.maxkeys:
                 self.trimcutoff *= 1.1
     def iterkeys(self):
-        return self.counts.keys()
+        return list(self.counts.keys())
             
 
 sampledata = samplefile(sys.argv[1])
@@ -114,13 +114,13 @@ allseqs = defaultdict(int)
 totalreads = defaultdict(int)
 
 for currsample in samples:
-    for currseq in seqcount[currsample].iterkeys():
+    for currseq in seqcount[currsample].keys():
         allseqs[currseq] += 1
         totalreads[currseq] += seqcount[currsample][currseq]
 
 maxmissing = 0
-print "\t".join(samples)    
-for i, currseq in enumerate(allseqs.iterkeys()):
+print("\t".join(samples))    
+for i, currseq in enumerate(allseqs.keys()):
     
     if not allmode and (allseqs[currseq] < 2 or totalreads[currseq] < 40):   #allseqs[currseq] < len(samples)
         
@@ -129,8 +129,8 @@ for i, currseq in enumerate(allseqs.iterkeys()):
             maxmissing = currmax
         continue
     seqname = "frag"+str(i+1)+"_"+str(len(currseq))
-    print seqname+"\t"+ "\t".join(str(seqcount[currsample][currseq]) for currsample in samples)
+    print(seqname+"\t"+ "\t".join(str(seqcount[currsample][currseq]) for currsample in samples))
 
-    print >>seqfile, ">"+ seqname
-    print >>seqfile, currseq
+    print(">"+ seqname, file=seqfile)
+    print(currseq, file=seqfile)
     

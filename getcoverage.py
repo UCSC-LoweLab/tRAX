@@ -57,11 +57,11 @@ class readcoverage:
                 
     def coveragelist(self):
         return self.coverage
-    def coveragealign(self, alignment, gapoutput = None,sizefactor = 1):
-        if len(self.coverage) != len(string.translate(alignment, None, str(gapchars))):
-            print >>sys.stderr, "Alignment length does not match bed length "+str(len(self.coverage))+" "+str(len(string.translate(alignment, None, str(gapchars)))) 
-            print >>sys.stderr, self.coverage
-            print >>sys.stderr, string.translate(alignment, None, str(gapchars))
+    def coveragealign(self, alignment, gapoutput = None,sizefactor = 1):          
+        if len(self.coverage) != len(alignment.translate( str.maketrans('', '', str(gapchars)))):
+            print("Alignment length does not match bed length "+str(len(self.coverage))+" "+str(len(string.translate(alignment, None, str(gapchars)))), file=sys.stderr) 
+            print(self.coverage, file=sys.stderr)
+            print(string.translate(alignment, None, str(gapchars)), file=sys.stderr)
             sys.exit(1)
         i = 0
         lastcoverage = None
@@ -106,11 +106,11 @@ def nasum(operands, naval = "NA"):
     elif not any("NA"== curr for curr in operands):
         return sum(operands)
     else:
-        print >>sys.stderr, "Trying to add incompatible alignments"
+        print("Trying to add incompatible alignments", file=sys.stderr)
         sys.exit(1)
     #return ",".join(str(curr) for curr in operands)
 def sumsamples(coverage,sampledata, repname, currfeat, sizefactors = defaultdict(lambda: 1)):
-    return (nasum(curr) for curr in itertools.izip(*(allcoverages[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]) for currsample in sampledata.getrepsamples(repname))))
+    return (nasum(curr) for curr in zip(*(allcoverages[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]) for currsample in sampledata.getrepsamples(repname))))
     
 count = 0
 
@@ -238,8 +238,9 @@ def getlocicoverage(currsample, sampledata, trnaloci,maxmismatches = None, minex
         if not os.path.isfile(currbam+".bai"):
             pysam.index(""+currbam)
         bamfile = pysam.Samfile(""+currbam, "rb" )  
-    except IOError as ( strerror):
-        print >>sys.stderr, strerror
+    except IOError as xxx_todo_changeme1:
+        ( strerror) = xxx_todo_changeme1
+        print(strerror, file=sys.stderr)
         sys.exit()
         
     for i, currfeat in enumerate(trnaloci):
@@ -290,8 +291,9 @@ def getsamplecoverage(currsample, sampledata, trnalist, trnaseqs,maxmismatches =
         if not os.path.isfile(currbam+".bai"):
             pysam.index(""+currbam)
         bamfile = pysam.Samfile(""+currbam, "rb" )  
-    except IOError as ( strerror):
-        print >>sys.stderr, strerror
+    except IOError as xxx_todo_changeme2:
+        ( strerror) = xxx_todo_changeme2
+        print(strerror, file=sys.stderr)
         sys.exit()
         
     for i, currfeat in enumerate(trnalist):
@@ -445,7 +447,7 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
                     realbase = "-"
                 if realbase == "U":
                     realbase = "T"
-                print >>mismatchreport, "\t".join([currfeat.name,currsample,str(positionnums[i]),str(covcounts[i]),str(allstarts[i]),str(allends[i]),str(uniquecounts[i]),str(multitrna[i]),str(multaccounts[i]),str(multaminocounts[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]/sizefactor[currsample]),realbase,str(mismatches[i]),str(deletions[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
+                print("\t".join([currfeat.name,currsample,str(positionnums[i]),str(covcounts[i]),str(allstarts[i]),str(allends[i]),str(uniquecounts[i]),str(multitrna[i]),str(multaccounts[i]),str(multaminocounts[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]/sizefactor[currsample]),realbase,str(mismatches[i]),str(deletions[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])]), file=mismatchreport)
     #sys.exit(1)        
 
 def locuscoverage(locicoverages, locicoveragetable, locilist,sampledata,sizefactor, mincoverage, locistk, locipositionnums, skipgaps = True):
@@ -467,7 +469,7 @@ def locuscoverage(locicoverages, locicoveragetable, locilist,sampledata,sizefact
                 if skipgaps and "gap" in locipositionnums[i]:
                     continue
 
-                print >>locicoveragetable, "\t".join([currfeat.name,currsample,str(locipositionnums[i]),str(currcount),str(locicoverages[currsample].readcounts[currfeat.name])])
+                print("\t".join([currfeat.name,currsample,str(locipositionnums[i]),str(currcount),str(locicoverages[currsample].readcounts[currfeat.name])]), file=locicoveragetable)
     #sys.exit(1)  
 
 
@@ -506,7 +508,7 @@ class positioninfo:
     '''
     def getsigdiffs(self, repdict):
         
-        for firsample, secsample in itertools.combinations(repdict.keys(),2):
+        for firsample, secsample in itertools.combinations(list(repdict.keys()),2):
             
             #firmismedian = (self.samplemism[firsample]/(1.*self.sampletotal[firsample] for currrep in repdict    
             if self.sampletotal[firsample] < 40 or self.sampletotal[secsample] < 40:
@@ -574,7 +576,7 @@ def getdiffs(samplecoverages, mismatchreport, trnalist,sampledata, sizefactor,mi
                     continue
                 posinfo[currfeat.name][currposition].addsample(currsample, covcounts[i],mismatches[i],readskipcount[i],actualbase,adeninecount[i],thyminecount[i],cytosinecount[i],guanosinecount[i], trimcovcount[i], trimmismatchcount[i])
                 #print >>mismatchreport, "\t".join([currfeat.name,currsample,str(positionnums[i]),str(covcounts[i]),str(allstarts[i]),str(uniquecounts[i]),str(multitrna[i]),str(multaccounts[i]),str(multaminocounts[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]),trnastk.aligns[currfeat.name][i],str(mismatches[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
-    print >>mismatchreport, "\t".join(["pos","firsample","secsample","firmismatches","firtotal","secmismatches","sectotal","firmismatchestrim","firtotaltrim","secmismatchestrim","sectotaltrim"])
+    print("\t".join(["pos","firsample","secsample","firmismatches","firtotal","secmismatches","sectotal","firmismatchestrim","firtotaltrim","secmismatchestrim","sectotaltrim"]), file=mismatchreport)
 
 
                 
@@ -584,9 +586,9 @@ def getdiffs(samplecoverages, mismatchreport, trnalist,sampledata, sizefactor,mi
 def genomeprint(samplecoverages, uniquegenome, trnalist,sampledata, mincoverage):
     covfiles = {uniquegenome + '-uniquegenomecoverages.txt':uniquegenomecoverages,uniquegenome + '-multgenomecoverages.txt':multigenomecoverages}
     
-    for filename, currcoverage in covfiles.iteritems():
+    for filename, currcoverage in covfiles.items():
         covfile = open(filename, "w")
-        print >>covfile,"Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+        print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=covfile)
             
         for currfeat in trnalist:
             totalreads = sum(allcoverages[currsample][currfeat.name].totalreads for currsample in samples)
@@ -594,16 +596,16 @@ def genomeprint(samplecoverages, uniquegenome, trnalist,sampledata, mincoverage)
                 continue        
             replicates = sampledata.allreplicates()
             for currrep in replicates:
-                print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor))
+                print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor)), file=covfile)
 
         covfile.close()
         
 def uniqcoverage(samplecoverages, uniquename, trnalist,sampledata, mincoverage):
     covfiles = {uniquename + '-uniquecoverages.txt':uniquecoverages,uniquename + '-multaccoverages.txt':multaccoverages,uniquename + '-multtrnacoverages.txt':multtrnacoverages,uniquename + '-multaminocoverages.txt':multaminocoverages}
     
-    for filename, currcoverage in covfiles.iteritems():
+    for filename, currcoverage in covfiles.items():
         covfile = open(filename, "w")
-        print >>covfile,"Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+        print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=covfile)
             
         for currfeat in trnalist:
             totalreads = sum(allcoverages[currsample][currfeat.name].totalreads for currsample in samples)
@@ -612,7 +614,7 @@ def uniqcoverage(samplecoverages, uniquename, trnalist,sampledata, mincoverage):
         
             replicates = sampledata.allreplicates()
             for currrep in replicates:
-                print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor))
+                print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor)), file=covfile)
                 
                 
         covfile.close()
@@ -642,7 +644,7 @@ def testmain(**argdict):
     trnafasta = argdict["trnafasta"]
     
     trnaseqs = fastadict(trnafasta)
-    for currname in trnaseqs.keys():
+    for currname in list(trnaseqs.keys()):
         trnaseqs[currname] = ("N"*edgemargin)+trnaseqs[currname]+("N"*edgemargin)
         
         
@@ -672,7 +674,7 @@ def testmain(**argdict):
         sizefactor = getsizefactors(argdict["sizefactors"]) 
         for currsample in sampledata.getsamples():
             if currsample not in sizefactor:
-                print >>sys.stderr, "Size factor file "+argdict["sizefactors"]+" missing "+currsample
+                print("Size factor file "+argdict["sizefactors"]+" missing "+currsample, file=sys.stderr)
                 sys.exit(1)
     combinereps = argdict["combinereps"]
     allcoveragefile = None
@@ -711,7 +713,7 @@ def testmain(**argdict):
         for currfile in locibed:
             locitrnas.extend(list(currbed for currbed in readbed(currfile)))
     except IOError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         sys.exit()
     trnalist = list(curr.addmargin(edgemargin) for curr in basetrnas)
     locilist = list(curr.addmargin(lociedgemargin) for curr in locitrnas)
@@ -727,10 +729,10 @@ def testmain(**argdict):
     #print >>sys.stderr, ",".join(curr.name for curr in locilist if "Ala" in curr.name)
     #sys.exit(1)
     coveragetable = open(argdict["allcoverage"], "w")
-    print >>coveragetable, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","uniquecoverage","multitrnacoverage","multianticodoncoverage","multiaminocoverage","tRNAreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
+    print("\t".join(["Feature","Sample","position","coverage","readstarts","readends","uniquecoverage","multitrnacoverage","multianticodoncoverage","multiaminocoverage","tRNAreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"]), file=coveragetable)
 
     locicoveragetable = open(argdict["locicoverage"], "w")
-    print >>locicoveragetable, "\t".join(["tRNA_name","sample","position","coverage", "total"])
+    print("\t".join(["tRNA_name","sample","position","coverage", "total"]), file=locicoveragetable)
     #uniqcoveragetable = open(argdict["uniqcoverage"], "w")
     mismatchcomparetable = open("mismatchcompare.txt", "w")
 
@@ -818,7 +820,7 @@ def main(**argdict):
         sizefactor = getsizefactors(argdict["sizefactors"]) 
         for currsample in sampledata.getsamples():
             if currsample not in sizefactor:
-                print >>sys.stderr, "Size factor file "+argdict["sizefactors"]+" missing "+currsample
+                print("Size factor file "+argdict["sizefactors"]+" missing "+currsample, file=sys.stderr)
                 sys.exit(1)
     combinereps = argdict["combinereps"]
     allcoveragefile = None
@@ -842,7 +844,7 @@ def main(**argdict):
         for currfile in bedfile:
             basetrnas.extend(list(currbed for currbed in readbed(currfile)))       
     except IOError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         sys.exit()
     
     trnalist = list(curr.addmargin(edgemargin) for curr in basetrnas)
@@ -872,8 +874,9 @@ def main(**argdict):
             if not os.path.isfile(currbam+".bai"):
                 pysam.index(""+currbam)
             bamfile = pysam.Samfile(""+currbam, "rb" )  
-        except IOError as ( strerror):
-            print >>sys.stderr, strerror
+        except IOError as xxx_todo_changeme:
+            ( strerror) = xxx_todo_changeme
+            print(strerror, file=sys.stderr)
             sys.exit()
             
         for i, currfeat in enumerate(trnalist):
@@ -913,7 +916,7 @@ def main(**argdict):
                 else:
                     pass
     covfiles = dict()
-    print >>allcoveragefile, "Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+    print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=allcoveragefile)
         
     for currfeat in trnalist:
 
@@ -927,17 +930,17 @@ def main(**argdict):
     
             replicates = sampledata.allreplicates()
             for currrep in replicates:
-                print >>allcoveragefile, currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(allcoverages,sampledata,currrep,currfeat,sizefactor))
+                print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(allcoverages,sampledata,currrep,currfeat,sizefactor)), file=allcoveragefile)
             
         else:
             for currsample in samples:
-                print >>allcoveragefile, currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in allcoverages[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]))
+                print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in allcoverages[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample])), file=allcoveragefile)
     if uniquegenome:
         covfiles = {uniquegenome + '-uniquegenomecoverages.txt':uniquegenomecoverages,uniquegenome + '-multgenomecoverages.txt':multigenomecoverages}
 
-        for filename, currcoverage in covfiles.iteritems():
+        for filename, currcoverage in covfiles.items():
             covfile = open(filename, "w")
-            print >>covfile,"Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+            print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=covfile)
                 
             for currfeat in trnalist:
                 totalreads = sum(allcoverages[currsample][currfeat.name].totalreads for currsample in samples)
@@ -947,18 +950,18 @@ def main(**argdict):
             
                     replicates = sampledata.allreplicates()
                     for currrep in replicates:
-                        print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor))
+                        print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor)), file=covfile)
                     
                 else:
                     for currsample in samples:
-                        print  >>covfile,currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]))
+                        print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample])), file=covfile)
             covfile.close()
     if uniquename:
         covfiles = {uniquename + '-uniquecoverages.txt':uniquecoverages,uniquename + '-multaccoverages.txt':multaccoverages,uniquename + '-multtrnacoverages.txt':multtrnacoverages,uniquename + '-multaminocoverages.txt':multaminocoverages}
         
-        for filename, currcoverage in covfiles.iteritems():
+        for filename, currcoverage in covfiles.items():
             covfile = open(filename, "w")
-            print >>covfile,"Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+            print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=covfile)
                 
             for currfeat in trnalist:
 
@@ -970,11 +973,11 @@ def main(**argdict):
             
                     replicates = sampledata.allreplicates()
                     for currrep in replicates:
-                        print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor))
+                        print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr) for curr in sumsamples(currcoverage,sampledata,currrep,currfeat,sizefactor)), file=covfile)
                     
                 else:
                     for currsample in samples:
-                        print  >>covfile,currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]))
+                        print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample])), file=covfile)
             covfile.close()
         
 if __name__ == "__main__":

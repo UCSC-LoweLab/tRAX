@@ -258,13 +258,13 @@ def errorline(alllist,faillist, failmessage, failcriteria, faildict, percentform
 
     failstring = " [" +",".join('<b style="color:'+failcolor(faillist[i],greenrgb,yellowrgb)+';">'+currsample+"</b>"+":"+outformat(faildict[currsample]) for i, currsample in enumerate(alllist))+"]"
         
-    print >>outputfile, "<p>"
-    print >>outputfile, '<text style="color:'+color+';">'+str(sum(faillist)) +" samples</text> " + failmessage +" ( "+failcriteria+") " +endstring+"<br/>"+ failstring
+    print("<p>", file=outputfile)
+    print('<text style="color:'+color+';">'+str(sum(faillist)) +" samples</text> " + failmessage +" ( "+failcriteria+") " +endstring+"<br/>"+ failstring, file=outputfile)
     
     if critfaillist is not None and sum(critfaillist) > 0:
         color = redrgb
-        print >>outputfile, '<text style="color:'+color+';">'+str(len(critfails)) +" samples</text> " + failmessage +" ( "+failcriteria+") [" +",".join(currsample+":"+outformat(faildict[currsample]) for currsample in faillist)+"]"
-    print >>outputfile, "</p>"
+        print('<text style="color:'+color+';">'+str(len(critfails)) +" samples</text> " + failmessage +" ( "+failcriteria+") [" +",".join(currsample+":"+outformat(faildict[currsample]) for currsample in faillist)+"]", file=outputfile)
+    print("</p>", file=outputfile)
     
 def errorsingle(fail, failmessage, failcriteria,critfail = False):
 
@@ -278,9 +278,9 @@ def errorsingle(fail, failmessage, failcriteria,critfail = False):
         message = "Critical"
     
 
-    print "<p>"
-    print '<text style="color:'+color+';">'+message +"</text> " +failmessage +" ( "+failcriteria+") "
-    print "</p>"
+    print("<p>")
+    print('<text style="color:'+color+';">'+message +"</text> " +failmessage +" ( "+failcriteria+") ")
+    print("</p>")
     
 class mappingresults:
     def __init__(self, unmap, single, multi):
@@ -327,9 +327,9 @@ def getreadmapping(samplename, sampleinfo):
         if i == 0:
             runsamples = list(fields)
             if set(runsamples) != set(allsamples):
-                print >>sys.stderr, runsamples
-                print >>sys.stderr, allsamples
-                print >>sys.stderr, "QAError"
+                print(runsamples, file=sys.stderr)
+                print(allsamples, file=sys.stderr)
+                print("QAError", file=sys.stderr)
             continue
             
         if len(fields) != len(allsamples) + 1:
@@ -382,16 +382,16 @@ def gettypecounts(samplename, sampleinfo):
             runsamples = list(fields)
             
             if set(runsamples) != set(allsamples):
-                print >>sys.stderr, runsamples
-                print >>sys.stderr, allsamples
-                print >>sys.stderr, "QAError"
+                print(runsamples, file=sys.stderr)
+                print(allsamples, file=sys.stderr)
+                print("QAError", file=sys.stderr)
             continue
             
            
         if len(fields) != len(allsamples) + 1:
-            print >>sys.stderr, runsamples
-            print >>sys.stderr, fields
-            print >>sys.stderr, "QAError"
+            print(runsamples, file=sys.stderr)
+            print(fields, file=sys.stderr)
+            print("QAError", file=sys.stderr)
             continue
         for j in range(0, len(runsamples)):
             typecounts[runsamples[j]][fields[0]] = int(fields[j + 1])
@@ -403,18 +403,18 @@ Length	Sample	other	trnas	pretrnas
 1	nuc_rep2	0	0	0
 '''
 def getmeanfreq(freqtable):
-    return sum(curr * freqtable[curr] for curr in freqtable.keys()) / (1.*sum(freqtable.values()) +.01)
+    return sum(curr * freqtable[curr] for curr in list(freqtable.keys())) / (1.*sum(freqtable.values()) +.01)
 class lengthcount:
     def __init__(self, trnalengthcounts, pretrnalengthcounts, otherlengthcounts):
         self.trnalengthcounts = trnalengthcounts
         self.pretrnalengthcounts = pretrnalengthcounts
         self.otherlengthcounts = otherlengthcounts
-        self.samples = set(itertools.chain(trnalengthcounts.keys(), pretrnalengthcounts.keys(), otherlengthcounts.keys()))
+        self.samples = set(itertools.chain(list(trnalengthcounts.keys()), list(pretrnalengthcounts.keys()), list(otherlengthcounts.keys())))
         
         #print >>sys.stderr, list(itertools.chain(list(trnalengthcounts[currsample].keys() for currsample in self.samples),list(pretrnalengthcounts[currsample].keys() for currsample in self.samples),list(otherlengthcounts[currsample].keys() for currsample in self.samples)))
 
         
-        self.maxlength = max(itertools.chain(itertools.chain.from_iterable(trnalengthcounts[currsample].keys() for currsample in self.samples),itertools.chain.from_iterable(pretrnalengthcounts[currsample].keys() for currsample in self.samples),itertools.chain.from_iterable(otherlengthcounts[currsample].keys() for currsample in self.samples)))
+        self.maxlength = max(itertools.chain(itertools.chain.from_iterable(list(trnalengthcounts[currsample].keys()) for currsample in self.samples),itertools.chain.from_iterable(list(pretrnalengthcounts[currsample].keys()) for currsample in self.samples),itertools.chain.from_iterable(list(otherlengthcounts[currsample].keys()) for currsample in self.samples)))
         
     def getalllengths(self, sample):
         return {currlength: self.trnalengthcounts[sample][currlength] + self.trnalengthcounts[sample][currlength] + self.trnalengthcounts[sample][currlength] for currlength in range(self.maxlength)}
@@ -527,7 +527,7 @@ class trnacount:
     def __init__(self, trnacounts):
         self.trnacounts = trnacounts
     def gettrnaactive(self, currsample, cutoff = 20):
-        return sum(1 for curr in self.trnacounts[currsample].iterkeys() if curr > cutoff)
+        return sum(1 for curr in self.trnacounts[currsample].keys() if int(self.trnacounts[currsample][curr]) > cutoff)
     def gettrnaactivepercent(self, currsample, trnainfo, cutoff = 20):
         #print >>sys.stderr, self.gettrnaactive(currsample, cutoff)
         #print >>sys.stderr, (1.*len(trnainfo.gettranscripts()))
@@ -547,15 +547,15 @@ def gettrnacounts(samplename, sampleinfo, trnainfo):
         if i == 0:
             runsamples = list(fields)
             if set(runsamples) != set(allsamples):
-                print >>sys.stderr, runsamples
-                print >>sys.stderr, allsamples
-                print >>sys.stderr, "QAError"
+                print(runsamples, file=sys.stderr)
+                print(allsamples, file=sys.stderr)
+                print("QAError", file=sys.stderr)
             continue
            
         if len(fields) != len(allsamples) + 1:
-            print >>sys.stderr, runsamples
-            print >>sys.stderr, fields
-            print >>sys.stderr, "QAError"
+            print(runsamples, file=sys.stderr)
+            print(fields, file=sys.stderr)
+            print("QAError", file=sys.stderr)
             continue
         if fields[0] in trnatranscripts:    
             for j in range(0, len(runsamples)):
@@ -578,15 +578,15 @@ def getsizefactor(samplename, sampleinfo):
         if i == 0:
             runsamples = list(fields)
             if set(runsamples) != set(allsamples):
-                print >>sys.stderr, list(runsamples)
-                print >>sys.stderr, list(allsamples)
-                print >>sys.stderr, "QAError"
+                print(list(runsamples), file=sys.stderr)
+                print(list(allsamples), file=sys.stderr)
+                print("QAError", file=sys.stderr)
             continue
            
         if len(fields) != len(allsamples):
-            print >>sys.stderr, len(runsamples)
-            print >>sys.stderr, len(fields)
-            print >>sys.stderr, "QAError"
+            print(len(runsamples), file=sys.stderr)
+            print(len(fields), file=sys.stderr)
+            print("QAError", file=sys.stderr)
             continue
         #print >>sys.stderr, "**"
         for j in range(0, len(runsamples)):
@@ -641,7 +641,7 @@ def readtrimindex(trimindex):
         if len(fields) > 1:
             filelocs[fields[0]] = fields[1]
     indexfile.close()
-    return filelocs.keys()
+    return list(filelocs.keys())
 
 
 mode = '''<h2>TRAX Data Quality Report</h2>
@@ -701,23 +701,23 @@ def main(**args):
     tgirtmode = args["tgirt"]
     
     allsamples = sampleinfo.getsamples()
-    print >>outputfile, "<html>"
-    print >>outputfile, "<head>"+style+"</head>"
+    print("<html>", file=outputfile)
+    print("<head>"+style+"</head>", file=outputfile)
     if tgirtmode: 
         modestring = "Full-length tRNAs"
     else:
         modestring = "tRNA fragments"
     date = strftime("%A %B %d, %Y", localtime())
-    print >>outputfile, mode.format(date= date,mode =modestring)
+    print(mode.format(date= date,mode =modestring), file=outputfile)
     
 
-    print >>outputfile, "<body>"
+    print("<body>", file=outputfile)
     #if tgirtmode:
     #    print >>outputfile, "<p>In TGIRT mode for tRNA transcript analysis</p>"
     #else:
     #    print >>outputfile, "<p>In ARMSeq mode for tRNA fragment analysis</p>"
         
-    print >>outputfile, '<a name="summary"><h4>Summary</h4></a>'
+    print('<a name="summary"><h4>Summary</h4></a>', file=outputfile)
     prepresults = list()
     if runname is None and os.path.exists("trimindex.txt"):
         runnames = readtrimindex("trimindex.txt")
@@ -736,36 +736,36 @@ def main(**args):
     else:
         allresults = prepresults+mappingresults+typeresults+countresults
     
-    print >>outputfile, "<p>"
+    print("<p>", file=outputfile)
     for currtest in allresults:
         color = "rgb(60,170,113)"
         errlvl = currtest.getteststatus()
         color = currtest.gettestcolor()
-        print >>outputfile, '<b style="color:{color};">{msg}</b> <a href="#{testname}">{criteria}</a> ({filename})</br>'.format(color = color, msg = errlvl, testname = currtest.shortname, criteria = currtest.criteria, filename = filelink(currtest.checkfile))
+        print('<b style="color:{color};">{msg}</b> <a href="#{testname}">{criteria}</a> ({filename})</br>'.format(color = color, msg = errlvl, testname = currtest.shortname, criteria = currtest.criteria, filename = filelink(currtest.checkfile)), file=outputfile)
 
-    print >>outputfile, "</p>"
+    print("</p>", file=outputfile)
     
-    print >>outputfile, "<hr>\n<hr>"
+    print("<hr>\n<hr>", file=outputfile)
     
     for currtest in allresults:
-        print >>outputfile, '<a name="{testname}"><h4>{msg}</h4></a>'.format(testname = currtest.shortname,msg = currtest.criteria)
+        print('<a name="{testname}"><h4>{msg}</h4></a>'.format(testname = currtest.shortname,msg = currtest.criteria), file=outputfile)
 
-        print >>outputfile, '<table>'
+        print('<table>', file=outputfile)
 
-        print >>outputfile, '<thead><tr><th width="15%">Status</th><th width="50%">Sample</tH><th>{measure}</th></tr></thead>'.format(measure = currtest.dimension)
+        print('<thead><tr><th width="15%">Status</th><th width="50%">Sample</tH><th>{measure}</th></tr></thead>'.format(measure = currtest.dimension), file=outputfile)
 
-        print >>outputfile, '<tbody>'
+        print('<tbody>', file=outputfile)
 
         for currsample in allsamples:
             color = currtest.getsamplecolor(currsample)
             errlvl = currtest.getsamplestatus(currsample)
-            print >>outputfile,  '<tr><td><b style="color:{color};">{errlvl}</b></td><td>{samplename}</td><td>{sampleresult}</td></tr>'.format(color = color, errlvl = errlvl, samplename=currsample,sampleresult=currtest.getsampleresult(currsample))
+            print('<tr><td><b style="color:{color};">{errlvl}</b></td><td>{samplename}</td><td>{sampleresult}</td></tr>'.format(color = color, errlvl = errlvl, samplename=currsample,sampleresult=currtest.getsampleresult(currsample)), file=outputfile)
 
 
 
-        print >>outputfile,'</tbody>\n\n</table>\n\n<p><a href="#summary">back to Summary</a></p>\n\n<hr>'
+        print('</tbody>\n\n</table>\n\n<p><a href="#summary">back to Summary</a></p>\n\n<hr>', file=outputfile)
 
-    print >>outputfile,"</html>"
+    print("</html>", file=outputfile)
 
 
 

@@ -22,8 +22,8 @@ from distutils.spawn import find_executable
 def get_location(program, allowfail = False):
     progloc = find_executable(program)
     if find_executable(program) is None and not allowfail:
-        print >>sys.stderr, "Could not find "+program+" in path"
-        print >>sys.stderr, "Aborting"
+        print("Could not find "+program+" in path", file=sys.stderr)
+        print("Aborting", file=sys.stderr)
         sys.exit(1)
     else:
         return progloc
@@ -34,25 +34,27 @@ def convertbam(dbname,inputbam, outputbam, scriptdir, force = False, logfile = s
    
         #print >>sys.stderr, tempfile.gettempprefix()
         tempprefix = inputbam.split(".")[0]+"_"+str(os.getpid())
+        
         bamconvertcommand =scriptdir+'/convertbam.py '+inputbam+' '+dbname+' | samtools sort -T '+tempfile.gettempdir()+'/convert'+tempprefix+' - -o '+outputbam
         #print >>sys.stderr, bamconvertcommand
+        print(bamconvertcommand, file=sys.stderr)
         #sys.exit(1)
         if logfile:
             #print >>logfile,  bamconvertcommand
             pass
         bamconvertrun = None
         logfile.flush()
-        bamconvertrun = subprocess.Popen(bamconvertcommand, shell = True, stderr = subprocess.PIPE)
+        bamconvertrun = subprocess.Popen(bamconvertcommand, shell = True, stderr = subprocess.PIPE,universal_newlines=True )
         
         output = bamconvertrun.communicate()
         errinfo = output[1]
         if logfile is not None:
             pass
-            print >>logfile, errinfo 
+            print(errinfo, file=logfile) 
         logfile.flush()
         if bamconvertrun.returncode:
-            print >>sys.stderr, "Failure to convert bam to genome space"
-            print >>sys.stderr, "check logfile"
+            print("Failure to convert bam to genome space", file=sys.stderr)
+            print("check logfile", file=sys.stderr)
             logfile.close()
             sys.exit(1)
 
@@ -62,10 +64,10 @@ def samtoolsmerge(bamfiles, outbam, force = False):
         samcommand = [samtoolsloc,"merge","-f", outbam]
         samcommand.extend(bamfiles)
         
-        samtoolsjob = subprocess.Popen(samcommand,stdout = subprocess.PIPE,stderr = subprocess.STDOUT )
-        print >>sys.stderr, " ".join(samcommand)
+        samtoolsjob = subprocess.Popen(samcommand,stdout = subprocess.PIPE,stderr = subprocess.STDOUT,universal_newlines=True  )
+        print(" ".join(samcommand), file=sys.stderr)
         samtoolsresults = samtoolsjob.communicate()[0]
-        print >>sys.stderr, samtoolsresults
+        print(samtoolsresults, file=sys.stderr)
     
 
 	
@@ -76,56 +78,56 @@ def createmultiwigtrackdb(sampledata, expname,trackfile, shortlabel = "", longla
     currpriority = startpriority
     trackdb = trackfile
     
-    print  >>trackdb, "track "+expname+suffix+"tracks            "
+    print("track "+expname+suffix+"tracks            ", file=trackdb)
     #print  >>trackdb, "compositeTrack on                     "
-    print  >>trackdb, "superTrack on show"
+    print("superTrack on show", file=trackdb)
     
-    print  >>trackdb, "shortLabel "+expname+" "+shortlabel
-    print  >>trackdb, "longLabel Data from "+expname+" "+longlabel
-    print  >>trackdb, "visibility full"
+    print("shortLabel "+expname+" "+shortlabel, file=trackdb)
+    print("longLabel Data from "+expname+" "+longlabel, file=trackdb)
+    print("visibility full", file=trackdb)
     #print  >>trackdb, "type bigWig                           "
     #print  >>trackdb, "dragAndDrop on                        "
     #print  >>trackdb, "autoScale on                          "
     #print  >>trackdb, "alwaysZero on                         "
     #print  >>trackdb, "maxHeightPixels 256:100:32              "
-    print  >>trackdb, "\n"
+    print("\n", file=trackdb)
     
     #print >>sys.stderr, sampledata.samplelist
     for currrep in sampledata.allreplicates():
         #print >>sys.stderr, sampledata.getrepsamples(currrep)
         for currstrand in ['Plus','Minus']:
-            print  >>trackdb, "\ttrack "+currrep+suffix+'_'+currstrand+"tracks"
-            print  >>trackdb, "\tcontainer multiWig"
-            print  >>trackdb, "\tshortLabel "+currrep+suffix+" "+currstrand+" Strand"
-            print  >>trackdb, "\tlongLabel Data from "+expname+" "+currrep+suffix+" "+currstrand+" Strand"
-            print  >>trackdb, "\ttype bigWig"
-            print  >>trackdb, "\tparent "+expname+suffix+"tracks on"
-            print  >>trackdb, "\tdragAndDrop on"
+            print("\ttrack "+currrep+suffix+'_'+currstrand+"tracks", file=trackdb)
+            print("\tcontainer multiWig", file=trackdb)
+            print("\tshortLabel "+currrep+suffix+" "+currstrand+" Strand", file=trackdb)
+            print("\tlongLabel Data from "+expname+" "+currrep+suffix+" "+currstrand+" Strand", file=trackdb)
+            print("\ttype bigWig", file=trackdb)
+            print("\tparent "+expname+suffix+"tracks on", file=trackdb)
+            print("\tdragAndDrop on", file=trackdb)
             if stacked:
-                print  >>trackdb, "\taggregate solidOverlay"
+                print("\taggregate solidOverlay", file=trackdb)
                 
             else:
-                print  >>trackdb, "\taggregate transparentOverlay"
-            print  >>trackdb, "\tshowSubtrackColorOnUi on"
-            print  >>trackdb, "\tautoScale on"
-            print  >>trackdb, "\talwaysZero on"
-            print  >>trackdb, "\tpriority "+str(currpriority + .1)+"  "
-            print  >>trackdb, "\tmaxHeightPixels 256:100:32"
-            print  >>trackdb, "\tvisibility full"
-            print  >>trackdb, "\n"
+                print("\taggregate transparentOverlay", file=trackdb)
+            print("\tshowSubtrackColorOnUi on", file=trackdb)
+            print("\tautoScale on", file=trackdb)
+            print("\talwaysZero on", file=trackdb)
+            print("\tpriority "+str(currpriority + .1)+"  ", file=trackdb)
+            print("\tmaxHeightPixels 256:100:32", file=trackdb)
+            print("\tvisibility full", file=trackdb)
+            print("\n", file=trackdb)
             currpriority += .2
             repsamples = sampledata.getrepsamples(currrep)
             for i, currsample in enumerate(repsamples):
-                print  >>trackdb, "\t\ttrack "+currsample+suffix+'_'+currstrand+"track"
-                print  >>trackdb, "\t\ttype bigWig"
-                print  >>trackdb, "\t\tparent "+currrep+suffix+'_'+currstrand+"tracks"
-                print  >>trackdb, "\t\tshortLabel "+currsample+suffix+" "+currstrand+" Strand"
-                print  >>trackdb, "\t\tlongLabel Data from "+expname+" "+currsample+suffix+" "+currstrand+" Strand"
-                print  >>trackdb, "\t\tcolor "+trackcolors[i % len(trackcolors)]+""
-                print  >>trackdb, "\t\tbigDataUrl "+currsample+suffix+"."+currstrand+".bw"
-                print  >>trackdb, "\t\tvisibility full"
+                print("\t\ttrack "+currsample+suffix+'_'+currstrand+"track", file=trackdb)
+                print("\t\ttype bigWig", file=trackdb)
+                print("\t\tparent "+currrep+suffix+'_'+currstrand+"tracks", file=trackdb)
+                print("\t\tshortLabel "+currsample+suffix+" "+currstrand+" Strand", file=trackdb)
+                print("\t\tlongLabel Data from "+expname+" "+currsample+suffix+" "+currstrand+" Strand", file=trackdb)
+                print("\t\tcolor "+trackcolors[i % len(trackcolors)]+"", file=trackdb)
+                print("\t\tbigDataUrl "+currsample+suffix+"."+currstrand+".bw", file=trackdb)
+                print("\t\tvisibility full", file=trackdb)
                 
-                print  >>trackdb, "\n"
+                print("\n", file=trackdb)
 
 
     
@@ -134,40 +136,40 @@ def createtrackdb(allreps, expname):
     trackdb = open (expname+"/trackhub/trackdb.txt", "w")
     currpriority = 2.3
     
-    print  >>trackdb, "track "+expname+"tracks            "
-    print  >>trackdb, "compositeTrack on                     "
-    print  >>trackdb, "shortLabel Data from "+expname+"   "
-    print  >>trackdb, "longLabel Data from "+expname+"    "
-    print  >>trackdb, "type bigWig                           "
-    print  >>trackdb, "dragAndDrop on                        "
-    print  >>trackdb, "autoScale on                          "
-    print  >>trackdb, "alwaysZero on                         "
-    print  >>trackdb, "maxHeightPixels 100:32:8              "
-    print  >>trackdb, "\n"
+    print("track "+expname+"tracks            ", file=trackdb)
+    print("compositeTrack on                     ", file=trackdb)
+    print("shortLabel Data from "+expname+"   ", file=trackdb)
+    print("longLabel Data from "+expname+"    ", file=trackdb)
+    print("type bigWig                           ", file=trackdb)
+    print("dragAndDrop on                        ", file=trackdb)
+    print("autoScale on                          ", file=trackdb)
+    print("alwaysZero on                         ", file=trackdb)
+    print("maxHeightPixels 100:32:8              ", file=trackdb)
+    print("\n", file=trackdb)
     
     for currrep in allreps:
         
 
-        print >>trackdb, "track "+currrep+"plus                                             "
-        print  >>trackdb, "parent "+expname+"tracks                                   "
-        print  >>trackdb, "bigDataUrl "+currrep+".Plus.bw                                 "
-        print  >>trackdb, "shortLabel Plus "+currrep+"                                    "
-        print  >>trackdb, "longLabel Plus strand coverage "+currrep+" all mapped reads    "
-        print  >>trackdb, "color 220,148,44                                             "
-        print  >>trackdb, "type bigWig                                                  "
-        print  >>trackdb, "priority "+str(currpriority)+"                                       "
-        print  >>trackdb, "\n"
+        print("track "+currrep+"plus                                             ", file=trackdb)
+        print("parent "+expname+"tracks                                   ", file=trackdb)
+        print("bigDataUrl "+currrep+".Plus.bw                                 ", file=trackdb)
+        print("shortLabel Plus "+currrep+"                                    ", file=trackdb)
+        print("longLabel Plus strand coverage "+currrep+" all mapped reads    ", file=trackdb)
+        print("color 220,148,44                                             ", file=trackdb)
+        print("type bigWig                                                  ", file=trackdb)
+        print("priority "+str(currpriority)+"                                       ", file=trackdb)
+        print("\n", file=trackdb)
         
         
-        print  >>trackdb, "track "+currrep+"Minus                                             "
-        print  >>trackdb, "parent "+expname+"tracks                                    "
-        print  >>trackdb, "bigDataUrl "+currrep+".Minus.bw                                 "
-        print  >>trackdb, "shortLabel Minus "+currrep+"                                    "
-        print  >>trackdb, "longLabel Minus strand coverage "+currrep+" all mapped reads    "
-        print  >>trackdb, "color 112,73,18                                       "
-        print  >>trackdb, "type bigWig                                                  "
-        print  >>trackdb, "priority "+str(currpriority + .1)+"                                  "
-        print  >>trackdb, "\n\n\n"
+        print("track "+currrep+"Minus                                             ", file=trackdb)
+        print("parent "+expname+"tracks                                    ", file=trackdb)
+        print("bigDataUrl "+currrep+".Minus.bw                                 ", file=trackdb)
+        print("shortLabel Minus "+currrep+"                                    ", file=trackdb)
+        print("longLabel Minus strand coverage "+currrep+" all mapped reads    ", file=trackdb)
+        print("color 112,73,18                                       ", file=trackdb)
+        print("type bigWig                                                  ", file=trackdb)
+        print("priority "+str(currpriority + .1)+"                                  ", file=trackdb)
+        print("\n\n\n", file=trackdb)
 
         currpriority += .2
         
@@ -186,13 +188,14 @@ def makebigwigs(bamfile, repname, faifile, directory,scriptdir,filterloci = Fals
     if filterloci:
         filtercommand = scriptdir+'/filterunique.py --uniqloci | '
     #print >>sys.stderr, 'zsh -c "bedGraphToBigWig =(samtools view -b -F 0x10 ' +bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Plus.bw"'
- 
-    plusjob = subprocess.Popen('zsh -c "bedGraphToBigWig =(samtools view -b -F 0x10 ' +bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Plus.bw"', shell = True)
-    minusjob = subprocess.Popen('zsh -c "bedGraphToBigWig =(samtools view -b -f 0x10 '+bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Minus.bw"', shell = True)
+    print(faifile, file=sys.stderr )
+    print('zsh -c "bedGraphToBigWig =(samtools view -b -F 0x10 ' +bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Plus.bw"', file=sys.stderr)
+    plusjob = subprocess.Popen('zsh -c "bedGraphToBigWig =(samtools view -b -F 0x10 ' +bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Plus.bw"', shell = True,universal_newlines=True)
+    minusjob = subprocess.Popen('zsh -c "bedGraphToBigWig =(samtools view -b -f 0x10 '+bamfile+' | '+filtercommand+' genomeCoverageBed -scale '+str(1./scalefactor)+' -bg -ibam stdin -g '+faifile+' | sort -k1,1 -k2,2n) '+faifile+' '+directory+"/"+repname+suffix+'.Minus.bw"', shell = True,universal_newlines=True)
     plusjob.wait()
     minusjob.wait()
     if plusjob.returncode != 0 or minusjob.returncode != 0:
-        print >>sys.stderr, "conversion to bigwig failed"
+        print("conversion to bigwig of "+bamfile+" failed", file=sys.stderr)
         sys.exit(1)
     pass
 
@@ -202,7 +205,7 @@ def makebigwigs(bamfile, repname, faifile, directory,scriptdir,filterloci = Fals
 def maketracks(dbname, currbam, genomebam, currsample, scriptdir,trackdir, sizefactors = None):
     if sizefactors is None:
         sizefactors = defaultdict(int)
-    convertbam(dbname, currbam, genomebam, scriptdir, force = False)
+    convertbam(dbname, currbam, genomebam, scriptdir, force = True)
     makebigwigs(genomebam, currsample, dbname+"-tRNAgenome.fa.fai",trackdir,scriptdir, scalefactor =  sizefactors[currsample])
     #makebigwigs(genomebam, currsample, dbname+"-tRNAgenome.fa.fai",trackdir,scriptdir, filterloci = True, suffix = 'uniqloci', scalefactor =  sizefactors[currsample])	
     return genomebam
@@ -222,7 +225,7 @@ def main(**args):
     if not os.path.exists(trackdir):
         os.makedirs(trackdir)
     allsamples = sampledata.getsamples()
-    faidxjob = subprocess.Popen("samtools faidx "+dbname+"-tRNAgenome.fa",shell = True)
+    faidxjob = subprocess.Popen("samtools faidx "+dbname+"-tRNAgenome.fa",shell = True,universal_newlines=True )
     faidxjob.wait()
     convetbampool = Pool(processes=8)
     trackargs = list()
@@ -243,7 +246,7 @@ def main(**args):
         #makebigwigs(genomebam, currsample, dbname+"-tRNAgenome.fa.fai",trackdir,scriptdir, filterloci = True, suffix = 'uniqloci', scalefactor =  sizefactors[currsample])
     if threadmode:
         for  currresult in convetbampool.imap_unordered(maketracksspool, trackargs):
-            print >>sys.stderr, currresult+":"+str(time.time() - starttime)
+            print(currresult+":"+str(time.time() - starttime), file=sys.stderr)
             pass
         
 
