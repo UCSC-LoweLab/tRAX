@@ -46,7 +46,7 @@ def runrscript(*script):
 def subprocesspool(argnames):
     samplename = argnames[0]
     args = argnames[1]
-    process = subprocess.Popen(*args[0], **args[1], universal_newlines=True)
+    process = subprocess.Popen(*args[0], **args[1])
     process.wait()
     return samplename," ".join(args[0]),  process
 def compressargs( *args, **kwargs):
