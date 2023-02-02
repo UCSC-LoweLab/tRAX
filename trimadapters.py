@@ -87,7 +87,7 @@ def readcutadapt(processoutput):
     if processoutput.returncode != 0:
         print("cutadapt failed", file=sys.stderr)
         print(errinfo, file=sys.stderr)
-    print(errinfo, file=sys.stderr)
+    #print(errinfo, file=sys.stderr)
     trimmed = 0 
     discard = 0
     for line in errinfo.split("\n"):
@@ -270,7 +270,7 @@ umi_tools extract --bc-pattern=NNNNNN --log=umi.log --stdout=output.fastq.gz
 '''
 if not singleendmode:
     results = trimpool.imap_unordered(subprocesspool, list(tuple([currsample, seqprepruns[currsample]]) for currsample in sampleorder))
-    print("***||", file=sys.stderr)
+    #print("***||", file=sys.stderr)
     for samplename, command, spoutput in results:
         print(samplename +" merged", file=sys.stderr)
         #print >>sys.stderr, spoutput

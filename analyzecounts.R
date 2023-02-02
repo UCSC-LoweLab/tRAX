@@ -248,9 +248,6 @@ deseq2trans = zscores
 
 deseq2trans <- as.data.frame(deseq2trans)
 
-#deseq2trans = sweep(deseq2trans, MARGIN=1, STATS= rowMeans(deseq2trans))
-#get z score
-#apply(deseq2trans, 1, scale)
 
 #print(head(deseq2trans))
 

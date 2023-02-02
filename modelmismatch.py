@@ -54,7 +54,7 @@ from scipy.spatial.distance import euclidean
 
 '''
 gapchars = set("-._~")
-positions = list(str(curr) for curr in list([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]))
+trnapositions = list(str(curr) for curr in list([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]))
 
 def readpairfile(filename):
     samplepairs = list()
@@ -206,14 +206,18 @@ def scalecounts(secset, firset):
     newsecset = list(curr*scalingfactor for curr in secset)
     return newsecset
 
-def chitest(firset, secset, pcounts = .01, scaled = False):
+def chitest(firset, secset, pcounts = .01, scaled = True):
     fircounts = list(curr+pcounts for curr in firset)
     if scaled:
         seccounts = list(curr+pcounts for curr in secset)
-        seccounts = scalecounts(seccounts,firset)
+        seccounts = scalecounts(seccounts,fircounts)
     else:
         seccounts = list(curr+pcounts for curr in secset)
-    return stats.chisquare(fircounts, seccounts)
+    #print(str(fircounts)+":"+str(seccounts),file=sys.stderr )
+    #print(str(sum(fircounts))+":"+str(sum(seccounts)),file=sys.stderr )
+    chiresults = stats.chisquare(fircounts, seccounts)
+    #print(chiresults,file=sys.stderr )
+    return chiresults
 
 
 
@@ -301,7 +305,7 @@ class covcomparison:
             #print sum(self.secdata.basecounts())
             return chitest(self.firdata.basecounts(),self.secdata.basecounts(), pcounts = pcounts)
         else:
-            return "NA", 1
+            return 1, 1
             
     def reversepair(self):
         return covcomparison(self.secpos, self.firpos, self.secdata, self.firdata)
@@ -351,12 +355,14 @@ class covdata:
     def __init__(self):
         self.covdict = dict()
         self.nucpos = defaultdict(dict)
+        self.allpos = set()
     def getpos(self,currpos):
         return self.covdict[currpos]
     def addline(self, Sample, Feature, position,apercent, cpercent, gpercent,tpercent, deletions, actualbase, percentunique = None):
         #print "||"+ Sample+ " "+Feature +" "+ position
         self.covdict[covpos( Sample, Feature, position)] = covline(apercent, cpercent, gpercent,tpercent, deletions, actualbase, percentunique =  percentunique)
         self.nucpos[Feature][position] = actualbase
+        self.allpos.add(position)
         
     def getmismatchpos(self, featlist, samplelist,poslist, minmismatch = .2):
         posset = set()
@@ -364,7 +370,11 @@ class covdata:
             for currsample in samplelist:
                 for currfeat in featlist:
                     currcovpos = covpos(currsample, currfeat, currpos)
+                    print(str(currpos)+":"+currsample+":"+currfeat, file=sys.stderr)
+                    if currcovpos in self.covdict:
+                        print(self.covdict[currcovpos].mismatchpercent(), file=sys.stderr)
                     if currcovpos in self.covdict and self.covdict[currcovpos].mismatchpercent() > minmismatch:
+                        
                         posset.add(currpos)
                         break
         return posset
@@ -443,13 +453,17 @@ def readcovfile(covfile):
             mismatchedbases= fields[headerdict["mismatchedbases"]]
             deletions = fields[headerdict["deletions"]]
             coverage= float(fields[headerdict["coverage"]])
-            uniquereads = float(fields[headerdict["uniquecoverage"]])
+            if "uniquecoverage" in headerdict:
+                uniquereads = float(fields[headerdict["uniquecoverage"]])
+            else:
+                uniquereads = 0
             totalcount += 1
             if actualbase in gapchars:
                 #print >>sys.stderr, currline
                 continue
             if actualbase == "U":
                 actualbase = "T"
+            #print (currline, file=sys.stderr)
             covcounts.addline(Sample, Feature, position,apercent, cpercent, gpercent,tpercent, deletions, actualbase, percentunique = (uniquereads)/(1.*coverage + .1))
             #print  str(float(coverage))+":"+ str(float(gpercent) + float(cpercent) + float(tpercent) + float(apercent)+ float(deletions))
             #if float(coverage) !=  :
@@ -827,11 +841,24 @@ def main(**argdict):
     #minreads = 50
     
     #sys.exit()
-    
-    mismatchpositions =  covcounts.getmismatchpos(trnainfo.gettranscripts(),sampleinfo.getsamples(),positions)
-    pairgroup = None
-    mismatchlocs = list(currpos for currpos in positions if currpos in mismatchpositions)
+    trnamode = False
+    if trnamode:
+        selectpos = trnapositions
+        #selectpos = covcounts.allpos
+        mismatchpositions =  covcounts.getmismatchpos(trnainfo.gettranscripts(),sampleinfo.getsamples(),selectpos)
+        #print(mismatchpositions,file=sys.stderr)
+        pairgroup = None
+        mismatchlocs = list(currpos for currpos in selectpos if currpos in mismatchpositions)
+        #print(mismatchlocs,file=sys.stderr)
+    else:
+        selectpos = covcounts.allpos
+        mismatchpositions =  covcounts.getmismatchpos(trnainfo.gettranscripts(),sampleinfo.getsamples(),selectpos)
+        mismatchlocs = list(sorted(mismatchpositions))
 
+        print(mismatchpositions,file=sys.stderr)
+
+
+        
     '''
     if trnamode:
         pairgroup = gettrnasamples(mismatchlocs, trnainfo,sampleinfo)

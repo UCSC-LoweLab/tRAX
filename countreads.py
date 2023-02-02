@@ -54,6 +54,10 @@ class featurecount:
         
         self.genetypes = dict()
         
+        self.trnauniquewholecounts = defaultdict(int) 
+        self.trnauniquefivecounts = defaultdict(int) 
+        self.trnauniquethreecounts = defaultdict(int) 
+        
     def setgenetype(self, genename, genetype):
         self.genetypes[genename] = genetype
     def addcount(self, genename):
@@ -71,8 +75,16 @@ class featurecount:
        self.trnalocustrailercounts[genename] += 1
     def addtrnacount(self, genename):
        self.trnacounts[genename] += 1
-    def adduniquecount(self, genename):
+    def adduniquecount(self, genename, fragtype):
        self.trnauniquecounts[genename] += 1
+       if fragtype == "Whole":
+           self.trnauniquewholecounts[genename] += 1
+       elif fragtype == "Fiveprime":
+           self.trnauniquefivecounts[genename] += 1
+       elif fragtype == "Threeprime":
+           self.trnauniquethreecounts[genename] += 1
+       else:
+           pass
     def addaminocount(self, amino):
        self.aminocounts[amino] += 1
     def addanticodoncount(self, anticodon):
@@ -111,8 +123,20 @@ class featurecount:
        return self.trnalocustrailercounts[genename]
     def gettrnacount(self, genename):
        return self.trnacounts[genename]
+       
+       
     def getuniquecount(self, genename):
        return self.trnauniquecounts[genename]
+    def getfiveuniquecount(self, genename):
+       return self.trnauniquefivecounts[genename]
+    def getthreeuniquecount(self, genename):
+       return self.trnauniquethreecounts[genename]
+    def getwholeuniquecount(self, genename):
+       return self.trnauniquewholecounts[genename]
+    def getotheruniquecount(self, genename):
+       return self.trnauniquecounts[genename] - (self.trnauniquewholecounts[genename] + self.trnauniquethreecounts[genename] + self.trnauniquefivecounts[genename])
+       
+       
     def getaminocount(self, amino):
        return self.aminocounts[amino]
     def getanticodoncount(self, anticodon):
@@ -271,7 +295,7 @@ def getbamcounts(bamfile, samplename,trnainfo, trnaloci, trnalist,featurelist = 
             #print >>sys.stderr, endtype
             samplecounts.addendcount(currfeat.name, endtype)
             if currread.isuniquetrnamapping():
-                samplecounts.adduniquecount(currfeat.name)
+                samplecounts.adduniquecount(currfeat.name, fragtype = fragtype)
             if currread.isuniqueaminomapping():
                 pass
             if not currread.isuniqueaminomapping():
@@ -402,13 +426,19 @@ def printtypefile(genetypeout,samples, allcounts,trnalist, trnaloci, featurelist
               
      
 
-def printtrnauniquecountcountfile(trnauniquefile,samples,  samplecounts, trnalist, trnaloci , minreads = 5):
+def printtrnauniquecountcountfile(trnauniquefile,samples,  samplecounts, trnalist, trnaloci , minreads = 5, fragsep = True):
     trnauniquefile = open(trnauniquefile, "w")
     print("\t".join(currsample for currsample in samples), file=trnauniquefile)
     for currfeat in trnalist:
         if max(samplecounts[currsample].getuniquecount(currfeat.name) for currsample in samples) < minreads:
             continue
-        print(currfeat.name+"\t"+"\t".join(str(samplecounts[currsample].getuniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
+        if fragsep:
+            print(currfeat.name+"_fiveprime\t"+"\t".join(str(samplecounts[currsample].getfiveuniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
+            print(currfeat.name+"_threeprime\t"+"\t".join(str(samplecounts[currsample].getthreeuniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
+            print(currfeat.name+"_whole\t"+"\t".join(str(samplecounts[currsample].getwholeuniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
+            print(currfeat.name+"_other\t"+"\t".join(str(samplecounts[currsample].getotheruniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
+        else:
+            print(currfeat.name+"\t"+"\t".join(str(samplecounts[currsample].getuniquecount(currfeat.name)) for currsample in samples), file=trnauniquefile)
     trnauniquefile.close() 
 def printtrnacountfile(trnacountfilename,samples,  samplecounts, trnalist, trnaloci , minreads = 5):
     trnacountfile = open(trnacountfilename, "w")

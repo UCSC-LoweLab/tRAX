@@ -430,11 +430,11 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
             allstarts  = list(curr/sizefactor[currsample] if curr is not None else 0 for curr in samplecoverages[currsample].readstarts[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
             allends = list(curr/sizefactor[currsample] if curr is not None else 0 for curr in samplecoverages[currsample].readends[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
             allcovcount  = list(curr/sizefactor[currsample] if curr is not None else 0 for curr in samplecoverages[currsample].allcoverages[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-            adeninecount  = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].adeninemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-            thyminecount = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].thyminemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-            cytosinecount = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].cytosinemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-            guanosinecount  = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].guanosinemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-            readskipcount  = list(curr if curr is not None else 0 for curr in samplecoverages[currsample].readskips[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+            adeninecount  = list(int(curr) if curr is not None else 0 for curr in samplecoverages[currsample].adeninemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+            thyminecount = list(int(curr) if curr is not None else 0 for curr in samplecoverages[currsample].thyminemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+            cytosinecount = list(int(curr) if curr is not None else 0 for curr in samplecoverages[currsample].cytosinemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+            guanosinecount  = list(int(curr) if curr is not None else 0 for curr in samplecoverages[currsample].guanosinemismatches[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+            readskipcount  = list(int(curr) if curr is not None else 0 for curr in samplecoverages[currsample].readskips[currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
 
             for i, currcount in enumerate(allcovcount):
                 #removing all non-canonical positions to save space/memory

@@ -11,6 +11,8 @@ from multiprocessing import Process, Queue, Pool
 import time
 
 
+
+allfragtypes = set(["Whole","Fiveprime","Threeprime","Other"])                            
 def getchromdict(features):
     chromdict = defaultdict(list)
     for curr in features:
@@ -53,7 +55,13 @@ class counttypes:
         self.trnaantilocuscounts  = defaultdict(int)
         self.mismatchcounts  = defaultdict(int)
         self.trnamismatchcounts  = defaultdict(int)
-
+        self.aminouniqcounts = dict()
+        self.anticodonuniqcounts = dict()
+        self.trnatranscriptuniqcounts = dict()
+        for currfrag in allfragtypes:
+            self.aminouniqcounts[currfrag] = defaultdict(int)
+            self.anticodonuniqcounts[currfrag] = defaultdict(int)
+            self.trnatranscriptuniqcounts[currfrag] = defaultdict(int)
     def addsamplecounts(self):
         self.totalreads += 1
     def addreadlengths(self, length):
@@ -74,12 +82,29 @@ class counttypes:
         self.trnalocuscounts[currbed] += 1
     def addfulllocuscounts(self, currbed):
         self.fulllocuscounts[currbed] += 1
-    def addaminocounts(self, curramino):
+    def addaminocounts(self, curramino, fragtype = None, unique = None):
         self.aminos.add(curramino)
         self.aminocounts[curramino] += 1
-    def addanticodoncounts(self, curranticodon):
+        if unique is None or unique:
+
+            if fragtype is not None:
+                self.aminouniqcounts[fragtype][curramino] += 1
+    def addanticodoncounts(self, curranticodon, fragtype = None, unique = None):
         self.anticodons.add(curranticodon)
         self.anticodoncounts[curranticodon] += 1
+        if unique is None or unique:
+
+            if fragtype is not None:
+                self.anticodonuniqcounts[fragtype][curranticodon] += 1
+                
+    def addtrnacounts(self, currtrna, fragtype = None, unique = None):
+        if unique is None or unique:
+
+            if fragtype is not None:
+                self.trnatranscriptuniqcounts[fragtype][currtrna] += 1
+                
+                
+                
     def addindelreads(self, curramino):
         self.indelreads[curramino] += 1
     def addmismatchcounts(self, mismatchcounts):
@@ -202,27 +227,35 @@ def counttypereads(bamfile, samplename,trnainfo, trnaloci, trnalist,maturenames,
                 currfeat = maturenames[currbed][currread.chrom]
                 if currread.strand == "+":
                     
+
+                    fragtype = None
+                    #aminos.add(trnainfo.getamino(currfeat.name))
+                    fragtype = getfragtype(currfeat, currread)
+                    if fragtype == "Whole":
+                        
+                        #trnawholecounts[currsample][currbed] += 1
+                        pass
+                    elif fragtype == "Fiveprime":
+                        #trnafivecounts[currsample][currbed] += 1
+                        pass
+                    elif fragtype == "Threeprime":
+                        pass
+                        #trnathreecounts[currsample][currbed] += 1
+                    elif fragtype == "Trailer":
+                        #trnatrailercounts[currsample][currbed] += 1
+                        pass
+                    else:
+                        fragtype = "Other"
                     readtypecounts.addtrnareadlengths(readlength)
                     readtypecounts.addtrnasamplecounts()
                     readtypecounts.addtrnacounts(currbed)
-                    readtypecounts.addaminocounts(trnainfo.getamino(currfeat.name))
-                    readtypecounts.addanticodoncounts(trnainfo.getanticodon(currfeat.name))
+                    
+                    readtypecounts.addaminocounts(trnainfo.getamino(currfeat.name), fragtype = fragtype, unique = currread.isuniqueaminomapping())
+                    readtypecounts.addanticodoncounts(trnainfo.getanticodon(currfeat.name), fragtype = fragtype, unique = currread.isuniqueaminomapping())
+                    readtypecounts.addtrnacounts(currfeat.name, fragtype = fragtype, unique = currread.isuniquetrnamapping())
+
                     readtypecounts.addtrnamismatchcounts(currread.getmismatches())
                     
-
-                    #aminos.add(trnainfo.getamino(currfeat.name))
-                    if countfrags:
-                        fragtype = getfragtype(currfeat, currread)
-                        
-                        if fragtype == "Whole":
-                            
-                            trnawholecounts[currsample][currbed] += 1
-                        elif fragtype == "Fiveprime":
-                            trnafivecounts[currsample][currbed] += 1
-                        elif fragtype == "Threeprime":
-                            trnathreecounts[currsample][currbed] += 1
-                        elif fragtype == "Trailer":
-                            trnatrailercounts[currsample][currbed] += 1
                     gotread = True
                     break
                         #print >>sys.stderr, str(currread.start - currfeat.start)+"-"+str(currread.end - currfeat.start)  
@@ -451,9 +484,8 @@ def printrealcounts(countfile,samples, sampledata,allcounts,trnalist, trnaloci, 
         print("tRNA\t"+"\t".join(str(allcounts[currsample].trnacounts[currbed]) for currsample in samples), file=countfile)
         
 
-def printaminocounts(trnaaminofilename, sampledata,trnainfo,allcounts, sizefactor):
+def printaminocounts(trnaaminofilename, sampledata,trnainfo,allcounts, sizefactor, uniquemode = False):
     #print >>sys.stderr, trnaaminocounts
-    replicates = list(sampledata.allreplicates())
     trnaaminofile = open(trnaaminofilename, "w")
     #aminos = allaminos
     #otheraminos = set().union(*list(allcounts[currsample].aminos for currsample in sampledata.getsamples())) - set(allaminos)
@@ -461,20 +493,35 @@ def printaminocounts(trnaaminofilename, sampledata,trnainfo,allcounts, sizefacto
     
     aminos = trnainfo.allaminos()
     #print >>sys.stderr, aminos
-    print("\t".join(replicates), file=trnaaminofile)
-    for curramino in aminos:
-        #print >>sys.stderr, curramino
-        print(curramino+"\t"+"\t".join(str(sum(allcounts[currsample].aminocounts[curramino]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates), file=trnaaminofile)
-
-def printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo,allcounts, sizefactor):
-    #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
-    anticodons = trnainfo.allanticodons()
-    trnaanticodonfile = open(trnaanticodonfilename, "w")
     repmode = False
     if repmode:
         replicates = list(sampledata.allreplicates())
         
-        print("\t".join(replicates), file=trnaanticodonfile)
+        print("\t".join(replicates), file=trnaaminofile)
+        for curramino in aminos:
+            #print >>sys.stderr, curramino
+            print(curramino+"\t"+"\t".join(str(sum(allcounts[currsample].aminocounts[curramino]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates), file=trnaaminofile)
+    else:
+        
+        allsamples = list(sampledata.getsamples())
+        
+        
+        print("\t".join(allsamples), file=trnaaminofile)
+        for curramino in aminos:
+            if uniquemode:
+                for fragtype in allfragtypes:
+                    print(curramino+"_"+fragtype+"\t"+"\t".join(str(allcounts[currsample].aminouniqcounts[fragtype][curramino]) for currsample in allsamples), file=trnaaminofile)
+            else:
+                print(curramino+"\t"+"\t".join(str(allcounts[currsample].aminocounts[curramino]) for currsample in allsamples), file=trnaaminofile)
+def printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo,allcounts, sizefactor, uniquemode = False):
+    #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
+    anticodons = trnainfo.allanticodons()
+    trnaanticodonfile = open(trnaanticodonfilename, "w")
+    repmode = False    
+    if repmode:
+        replicates = list(sampledata.allreplicates())
+        
+        print("\t"+"\t".join(replicates), file=trnaanticodonfile)
         for curranticodon in anticodons:
             print(curranticodon+"\t"+"\t".join(str(sum(allcounts[currsample].anticodoncounts[curranticodon]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates), file=trnaanticodonfile)
     else:
@@ -483,7 +530,37 @@ def printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo,allcounts, s
         
         print("\t".join(allsamples), file=trnaanticodonfile)
         for curranticodon in anticodons:
-            print(curranticodon+"\t"+"\t".join(str(allcounts[currsample].anticodoncounts[curranticodon]/sizefactor[currsample]) for currsample in allsamples), file=trnaanticodonfile)
+            if uniquemode:
+                for fragtype in allfragtypes:
+                    print(curranticodon+"_"+fragtype+"\t"+"\t".join(str(allcounts[currsample].anticodonuniqcounts[fragtype][curranticodon]) for currsample in allsamples), file=trnaanticodonfile)
+            else:
+                print(curranticodon+"\t"+"\t".join(str(allcounts[currsample].anticodoncounts[curranticodon]) for currsample in allsamples), file=trnaanticodonfile)
+                
+                
+def printtrnacounts(trnacountfilename, sampledata,trnainfo,allcounts, sizefactor, uniquemode = False):
+    #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
+    alltrnas = trnainfo.gettranscripts()
+    trnacountfile = open(trnacountfilename, "w")
+    repmode = False
+    if repmode:
+        replicates = list(sampledata.allreplicates())
+        
+        print("\t"+"\t".join(replicates), file=trnacountfile)
+        for curranticodon in anticodons:
+            print(curranticodon+"\t"+"\t".join(str(sum(allcounts[currsample].trnatranscriptuniqcounts[currtrna]/sizefactor[currsample] for currsample in sampledata.getrepsamples(currrep))) for currrep in replicates), file=trnacountfile)
+    else:
+        allsamples = list(sampledata.getsamples())
+        
+        
+        print("\t".join(allsamples), file=trnacountfile)
+        for currtrna in alltrnas:
+            if uniquemode:
+                for fragtype in allfragtypes:
+                    print(currtrna+"_"+fragtype+"\t"+"\t".join(str(allcounts[currsample].trnatranscriptuniqcounts[fragtype][currtrna]) for currsample in allsamples), file=trnacountfile)
+            else:
+                pass
+
+
 def printmismatchcounts(trnamismatchname, sampledata,trnainfo,allcounts, sizefactor):
     #anticodons = set(itertools.chain.from_iterable(allcounts[currsample].anticodons for currsample in sampledata.getsamples()))
     anticodons = trnainfo.allanticodons()
@@ -547,6 +624,7 @@ def main(**argdict):
     trnatable = argdict["trnatable"]
     trnaaminofile = argdict["trnaaminofile"]
     trnaanticodonfile = argdict["trnaanticodonfile"]
+    uniquename = argdict["uniquename"]
     otherseqs = extraseqfile(argdict["otherseqs"])
     #print >>sys.stderr, argdict["otherseqs"]
     if "bamdir" not in argdict:
@@ -718,6 +796,10 @@ def main(**argdict):
         printanticodoncounts(trnaanticodonfilename, sampledata,trnainfo, allcounts, sizefactor)
     if mismatchfilename is not None:
         printmismatchcounts(mismatchfilename, sampledata,trnainfo, allcounts, sizefactor)
+    if uniquename is not None:
+        printaminocounts(uniquename+"-aminos.txt", sampledata,trnainfo, allcounts, sizefactor, uniquemode = True)
+        printanticodoncounts(uniquename+"-anticodons.txt", sampledata,trnainfo, allcounts, sizefactor, uniquemode = True)
+        printtrnacounts(uniquename+"-trnas.txt", sampledata,trnainfo, allcounts, sizefactor, uniquemode = True)
 
 
 def oldmain(**argdict):

@@ -501,7 +501,9 @@ def main(**argdict):
     bamdir = argdict["bamdir"]
     sampledata = samplefile(argdict["samplefile"], bamdir = bamdir)
     samples = sampledata.getsamples()
-    genomefasta = argdict["genomefasta"]
+    genomefasta = os.path.expanduser(argdict["genomefasta"])
+    
+
     chroms = faitobed(genomefasta+".fai")
     ensemblgtf = argdict["ensemblgtf"]
     bedfiles = argdict["bedfile"]
