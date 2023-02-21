@@ -82,9 +82,7 @@ makecovplot <-  function(covdata, filename){
 
 uniquecols <- c("Transcript Specific" = "#C77CFF", "Isodecoder Specific" = "#00BEC4","Isotype Specific" = "#7CAE00", "Not Amino Specific" = "#F8766D")
 
-#uniquecols <- c("#C77CFF","#00BEC4", "#7CAE00","#F8766D")
 
-#
 
 allsamples = unique(covdata$Sample)
 allfeatures = unique(covdata$Feature)
@@ -140,20 +138,9 @@ ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(cov
 
 makepercentcovplot <-  function(covdata, filename){
 
-#show_col(hue_pal()(4))
-
-
-#uniquecols <- c("#C77CFF","#00BEC4", "#7CAE00","#F8766D")
-
-#
 
 allfeatures = unique(covdata$Feature)
 
-#firstsample = unique(covdata$Feature)[1]
-#scalingpoint <- data.frame(Feature = allfeatures, Sample =  rep(length(allfeatures),firstsample),variable = rep("1",length(allfeatures)), value = rep(50,length(allfeatures)))
-# geom_point(data = scalingpoint, aes(x = variable, y = value), alpha = 0)
-
-#uniquecoverage	multitrnacoverage	multianticodoncoverage	multiaminocoverage
 coverage   <- ggplot(covdata,aes(x=variable,y=value), size = 2)   +theme_bw()+facet_grid(Feature ~ Sample, scales="free") + geom_bar(stat="identity") +  geom_vline(aes(xintercept = dist, col = Modification),data = aminomodomicstable,show.legend=TRUE,size=.2,linetype = "longdash")+theme(axis.text.y=element_text(colour="black",size=6),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8)) + ylab("Percentage of Read Coverage") + xlab("tRNA position") + scale_y_continuous(breaks=percentbreaks,limits = c(0, 1.01)) +scale_x_discrete(breaks=c("1","13","22","31","39","53","61","73"), labels=c(fiveprimename,dstartname,dendname,acstartname,acendname,tstartname,tendname,ccatailname)) + labs(fill="Mappability", vline="RNA\nModification") #+ scale_color_hue("mod")+labs(fill="RNA\nModification")#+scale_fill_manual(name="RNA\nmodifications")#+scale_colour_manual(data = aminomodomicstable, name="RNA\nModification") #+scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon", ccatailname))
 
 coverage <- configurecov(coverage)
@@ -165,15 +152,25 @@ ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(cov
 
 
 
-makecombplot <-  function(covdata, filename){
-
-smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = sortacceptor, order = as.numeric(sortacceptor)),width = 2, size = 2	) + facet_grid( ~ Sample, scales="free") +xlab("Position")+ geom_bar(stat="identity")+ ylab("Normalized Read Count") +   scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon",ccatailname),expand = c(0.05, .01)) +scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
+makecombplot <-  function(covdata, filename, indepscales = FALSE){
+if(indepscales){
+plotscales = "free"
+}else{
+plotscales = "free"
+}
+smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = amino, order = as.numeric(sortacceptor)),width = 2, size = 2) + 
+    geom_bar(stat="identity")+ 
+    
+    xlab("Position")+ 
+    ylab("Normalized Read Count") +   
+    scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon",ccatailname),expand = c(0.05, .01)) +
+    scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))  +
+    facet_grid( ~ Sample, scales="free", space= "free_y") 
 
 smallcovsummary <- configurecombine(smallcovsummary)
 
 combinescale = 3
 ggsave(filename=filename, smallcovsummary, width =combinescale*(.5+.75*length(unique(covdata$Sample))), height = combinescale*1,limitsize = FALSE)
-
 }
 makelocuscombplot <-  function(covdata, filename){
 
@@ -252,11 +249,7 @@ covplot<- covplot+theme(axis.ticks = element_line(size = .1))
               
 covplot<- covplot+theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=6))
 
-              
-covplot<- covplot+theme(axis.line = element_line(size = .1))
-covplot<- covplot+theme(panel.grid  = element_line(size = .1))
-              
-              
+
 covplot<- covplot+theme(axis.line = element_line(size = .1))
 covplot<- covplot+theme(panel.grid  = element_line(size = .15))
               
@@ -284,7 +277,19 @@ featnames = unique(as.character(coveragemeltagg$Feature))
 #tails = as.numeric(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), tail, 1)))
 #anticodonname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), function(x) { return( x[length(x) - 1] ) })))
 #aminoname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), function(x) { return( x[length(x) - 2] ) })))
-coveragemeltagg$Feature = factor(as.character(coveragemeltagg$Feature), levels = featnames)
+#coveragemeltagg$Feature = factor(as.character(coveragemeltagg$Feature), levels = featnames)
+#coveragemeltagg$amino = factor(as.character(coveragemeltagg$Feature), levels = featnames)
+
+
+#colnames(trnatable) <- c("trnaname", "loci", "amino", "anticodon")
+
+
+trnainfo = trnatable[,c("trnaname", "amino", "anticodon")]
+coveragemeltagg <- merge(coveragemeltagg,trnainfo, by.x = "Feature", by.y = "trnaname", all.x=TRUE)
+
+
+
+    
 return (coveragemeltagg)
 }
 
@@ -345,6 +350,7 @@ coverages <- read.table(opt$cov, header = TRUE,row.names = NULL, stringsAsFactor
 locicoverages <- read.table(opt$locicov, header = TRUE,row.names = NULL, stringsAsFactors=FALSE)
 
 trnatable <- read.table(opt$trna)
+colnames(trnatable) <- c("trnaname", "loci", "amino", "anticodon")
 sampletable <- read.table(opt$samples)
 expname <- opt$name
 modomicstable <- data.frame()
@@ -573,26 +579,11 @@ colnames(allmultmeltagg)[colnames(allmultmeltagg) == "x"]  <- "value"
 allmultmeltagg$Sample <- factor(allmultmeltagg$Sample,levels = unique(sampletable[,2]), ordered = TRUE)
 allmultmelt <- allmultmeltagg
 
-
-#curramino = "Ala"
-#
-#aminodata = allmultmelt[acceptorType == curramino,]
-#aminonamesec = paste(uniquename, "-",curramino,"_cov",outputformat,sep= "")
-#makecovplot(aminodata,aminonamesec)
-#
-#
-#aminomismatchdata = mismatchesmelt[acceptorType == curramino,]
-#aminonamemissec = paste(opt$directory,"/mismatch/",runname, "-",curramino,"_mismatch",outputformat,sep= "")
-#makepercentcovplot(aminomismatchdata,aminonamemissec)
-
-
-
-#print(head(coveragemeltagg))
-
-#print("**||1")
-
-
-makecombplot(coveragemelt,filename=paste(uniquename, "-combinedcoverages.pdf",sep= ""))
+print("::))")
+print(head(coveragemelt))
+makecombplot(coveragemelt,filename=paste(combinedfile,sep= ""))
+#makecombplot(coveragemelt,filename=paste(uniquename, "-combinedfreecoverages.pdf",sep= ""), indepscales = TRUE)
+print("::))")
 
 modomicstable <- data.frame(trna = character(), mod = character(), pos = character(),stringsAsFactors=FALSE)
 

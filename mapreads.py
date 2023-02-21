@@ -172,6 +172,7 @@ def testmain(**argdict):
     minnontrnasize = argdict["minnontrnasize"]
     bamdir = argdict["bamdir"]
     local = argdict["local"]
+    skipfqcheck = argdict["skipfqcheck"]
     
     trnamapfile = argdict["trnamapfile"]
     if bamdir is None:
@@ -222,7 +223,7 @@ def testmain(**argdict):
                 if not checkheaders(bamfile+".bam", sampledata.getfastq(samplename)):
                     badsamples.append(bamfile+".bam")
     
-    if len(badsamples) > 0:
+    if len(badsamples) > 0 and not skipfqcheck:
         print("Bam files "+",".join(badsamples)+" does not match fq files", file=sys.stderr)
         print("Aborting", file=sys.stderr)
         sys.exit(1)               

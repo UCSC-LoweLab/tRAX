@@ -47,8 +47,12 @@ sizefactors <- read.table(args[5], stringsAsFactors = FALSE,header= TRUE)
 
 trnatable <- read.table(args[6], stringsAsFactors = FALSE)
 sampletable <- read.table(args[7], stringsAsFactors = FALSE)
-comparisons <- read.table(args[8], stringsAsFactors = FALSE)
 
+haspairs = !is.na(args[8])
+if(haspairs){
+
+comparisons <- read.table(args[8], stringsAsFactors = FALSE)
+}
 sizefactorvec = sizefactors[1,]
 
 
@@ -69,21 +73,21 @@ rownames(aminocountmat)     = rownames(aminocounts)
 
 
 
-trnauniquecounts = data.frame(trnauniquemat)     
-anticodoncounts  = data.frame(anticodoncountmat) 
-aminocounts      = data.frame(aminocountmat)     
+origtrnauniquecounts = data.frame(trnauniquemat)     
+origanticodoncounts  = data.frame(anticodoncountmat) 
+origaminocounts      = data.frame(aminocountmat)     
 
-write.table(trnauniquecounts, file =  paste(experimentname,"/unique/",experimentname ,"-uniquetrnanormcounts.txt",sep= ""))
-write.table(anticodoncounts,  file = paste(experimentname,"/unique/",experimentname ,"-uniqueacnormcounts.txt",sep= ""))
-write.table(aminocounts,      file = paste(experimentname,"/unique/",experimentname ,"-uniqueaminonormcounts.txt",sep= ""))
+write.table(origtrnauniquecounts, file =  paste(experimentname,"/unique/",experimentname ,"-uniquetrnanormcounts.txt",sep= ""))
+write.table(origanticodoncounts,  file = paste(experimentname,"/unique/",experimentname ,"-uniqueacnormcounts.txt",sep= ""))
+write.table(origaminocounts,      file = paste(experimentname,"/unique/",experimentname ,"-uniqueaminonormcounts.txt",sep= ""))
 
 
 
 samplenames = unique(sampletable[,2])
 
-trnauniquecounts = trnauniquecounts + 1
-anticodoncounts = anticodoncounts + 1
-aminocounts = aminocounts + 1
+trnauniquecounts = origtrnauniquecounts + 1
+anticodoncounts = origanticodoncounts + 1
+aminocounts = origaminocounts + 1
 #print(head(trnauniquecounts))
 #print(head(aminocounts))
 
@@ -213,6 +217,34 @@ aminocounts[,samplenames[i]] <- aminocounts[,cols]
 
 aminocounts$amino = aminocounts$aminoname
 
+
+
+data <- origanticodoncounts[rowSums(origanticodoncounts) > 20,]
+datapca <- prcomp(t(data),center = TRUE,scale = TRUE) 
+
+
+percentlabels <- round(datapca$sdev / sum(datapca$sdev) * 100, 2)
+percentlabels <- paste( colnames(datapca$x), "(", paste( as.character(percentlabels), "%", ")", sep="") )
+#
+
+
+scores = as.data.frame(datapca$x)
+
+print(head(scores))
+# plot of observations
+
+#print(sampledata[match(rownames(scores),sampledata[,1]),2])
+#print(rownames(scores))
+#print(sampledata)
+#aes(colour = factor(cyl))
+
+samplename = sampletable[match(rownames(scores),sampletable[,1]),2]
+
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(scores), color = samplename)) + theme_bw()+labs(color="Sample Name")+ geom_point()+geom_hline(yintercept = 0, colour = "gray65") +geom_vline(xintercept = 0, colour = "gray65") + geom_text(alpha = 0.8, size = 2,vjust="inward",hjust="inward") + ggtitle("Anticodon Read Principle Component Analysis")    + xlab(percentlabels[1]) +    ylab(percentlabels[2]) 
+ggsave(filename=paste(experimentname,"/unique/",experimentname,"-anticodonpca",outputformat,sep= ""))
+
+
+if(haspairs){
 for (i in 1:length(rownames(comparisons))){
 
 yaxis = sampletable[sampletable[,2] == comparisons[i,1],1][1]
@@ -295,4 +327,5 @@ ggsave(paste(experimentname,"/unique/",comparisons[i,1],"_",comparisons[i,2] ,"-
 
 
 
+}
 }

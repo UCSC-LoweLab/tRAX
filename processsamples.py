@@ -32,7 +32,7 @@ from packaging import version
 
 
 
-parser = argparse.ArgumentParser(description='Generate fasta file containing mature tRNA sequences.')
+parser = argparse.ArgumentParser(description='Process tRNA experiment.')
 parser.add_argument('--experimentname',required=True,
                    help='experiment name to be used')
 parser.add_argument('--databasename',required=True,
@@ -81,7 +81,8 @@ parser.add_argument('--local', action="store_true", default=False,
                    help='use local bam mapping')
 parser.add_argument('--cores',
                    help='number of cores to use')
-
+parser.add_argument('--skipfqcheck', action="store_true", default=False,
+                   help='Skips the check that the fq files match bam files')
 parser.add_argument('--bamdir',
                    help='directory for placing bam files (default current working directory)')
 
@@ -215,8 +216,8 @@ def makefeaturebed(trnainfo,expinfo, ensgtf, bedfiles):
     allfeatfile.close()
 
 
-def mapsamples(samplefile, trnainfo,expinfo, lazyremap, bamdir = "./",  cores = 8, minnontrnasize = 20, local = False):
-    mapreads.testmain(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo,trnamapfile = expinfo.trnamapfile,lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize, local = local)
+def mapsamples(samplefile, trnainfo,expinfo, lazyremap, bamdir = "./",  cores = 8, minnontrnasize = 20, local = False, skipfqcheck = False):
+    mapreads.testmain(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo,trnamapfile = expinfo.trnamapfile,lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize, local = local, skipfqcheck = skipfqcheck)
 def countfeatures(samplefile, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = "./", cores = 8, maxmismatches = None):
     countreads.testmain(samplefile=samplefile,ensemblgtf=ensgtf,maturetrnas=[trnainfo.maturetrnas], bamdir = bamdir, otherseqs = trnainfo.otherseqs,trnaloci=[trnainfo.locifile],removepseudo=True,genetypefile=expinfo.genetypes,trnatable=trnainfo.trnatable,countfile=expinfo.genecounts,bedfile=bedfiles, trnacounts = expinfo.trnacounts,trnaends = expinfo.trnaendfile,trnauniquecounts = expinfo.trnauniquefile,nofrag=nofrag, cores = cores, maxmismatches = maxmismatches)
     #runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefile,expinfo.pcaplot)
@@ -307,7 +308,7 @@ maponly = args.maponly
 local = args.local
 maxmismatches = args.maxmismatches
 mincoverage = args.mincoverage
-
+skipfqcheck = args.skipfqcheck
 mismatch = False
 paironly= args.paironly
 splittypecounts = False
@@ -492,7 +493,6 @@ if pairfile and paironly:
             sys.exit(1)
     
     runrscript(scriptdir+"/makescatter.R",expname,expinfo.normalizedcounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)
-    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename,pairfile)
     
     
     
@@ -522,7 +522,7 @@ runtime = time.time()
 loctime = time.localtime(runtime)
 print("Mapping Reads", file=sys.stderr)
 #need to check here for names with dashes
-mapsamples(samplefilename, trnainfo,expinfo, lazyremap, bamdir = bamdir, cores = cores, minnontrnasize = minnontrnasize, local = local)
+mapsamples(samplefilename, trnainfo,expinfo, lazyremap, bamdir = bamdir, cores = cores, minnontrnasize = minnontrnasize, local = local, skipfqcheck = skipfqcheck)
 
 runinfoname = expname+"/"+expname+"-runinfo.txt"
 dbinfo = None
@@ -583,7 +583,6 @@ if pairfile:
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefilename,expinfo.pcaplot)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnacounts,samplefilename,expinfo.pcatrnaplot)
     runrscript(scriptdir+"/makescatter.R",expname,expinfo.normalizedcounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)
-    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename,pairfile)
 
     runrscript(scriptdir+"/ccaendplot.R","--ends="+expinfo.trnaendfile,"--trna="+trnainfo.trnatable, "--samples="+samplefilename,"--directory="+expname+"/","--runname="+expname)
     
@@ -602,13 +601,17 @@ elif not nosizefactors:
             sys.exit(1)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefilename,expinfo.pcaplot)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnacounts,samplefilename,expinfo.pcatrnaplot)
-    #runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename,pairfile)
 
     runrscript(scriptdir+"/ccaendplot.R","--ends="+expinfo.trnaendfile,"--trna="+trnainfo.trnatable, "--samples="+samplefilename,"--directory="+expname+"/","--runname="+expname)
 
 #Count the reads by gene type
 print("Counting Read Types", file=sys.stderr)
 counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = bamdir, ignoresizefactors = nosizefactors,countfrags =  splittypecounts, bamnofeature = bamnofeature, cores = cores)
+
+if pairfile:
+    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename,pairfile)
+else:
+    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename)
 
 
 #coverage plot of tRNAs
