@@ -315,7 +315,7 @@ bamnofeature = args.dumpother
 
 minnontrnasize = args.minnontrnasize
 
-rlogname = "Rlog-"expname".txt"
+rlogname = "Rlog-"+expname+".txt"
 rlogfile = open(rlogname, "w")
 
 if args.cores is None:
