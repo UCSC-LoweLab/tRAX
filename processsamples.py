@@ -87,8 +87,7 @@ parser.add_argument('--bamdir',
                    help='directory for placing bam files (default current working directory)')
 
 
-rlogname = "Rlog.txt"
-rlogfile = open(rlogname, "w")
+
 
 def runrscript(*script):
     print("Rscript "+" ".join(script), file=sys.stderr)
@@ -315,6 +314,9 @@ splittypecounts = False
 bamnofeature = args.dumpother
 
 minnontrnasize = args.minnontrnasize
+
+rlogname = "Rlog-"expname".txt"
+rlogfile = open(rlogname, "w")
 
 if args.cores is None:
     cores = min(8,cpu_count())

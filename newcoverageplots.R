@@ -166,7 +166,7 @@ makecombplot <-  function(covdata, filename, indepscales = FALSE){
     if(indepscales){
     smallcovsummary = smallcovsummary + facet_wrap( ~ Sample, scales="free",ncol = 10)
     }else{
-    smallcovsummary = smallcovsummary + facet_grid( ~ Sample, scales=myBreaks)
+    smallcovsummary = smallcovsummary + facet_grid( ~ Sample)
     }
     
 
@@ -576,7 +576,6 @@ allmultmelt <- allmultmeltagg
 makecombplot(coveragemelt,filename=paste(combinedfile,sep= ""))
 makecombplot(coveragemelt,filename=paste(uniquename, "-combinedfreecoverages.pdf",sep= ""), indepscales = TRUE)
 #print("::))")
-q()
 modomicstable <- data.frame(trna = character(), mod = character(), pos = character(),stringsAsFactors=FALSE)
 
 modomicstable <- read.table(text ="",col.names = c("trna", "mod", "pos"),colClasses = c("character", "character", "character")) #(trna = character(), mod = character(), pos = character(),stringsAsFactors=FALSE)
