@@ -153,19 +153,22 @@ ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(cov
 
 
 makecombplot <-  function(covdata, filename, indepscales = FALSE){
-if(indepscales){
-plotscales = "free"
-}else{
-plotscales = "free"
-}
-smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = amino, order = as.numeric(sortacceptor)),width = 2, size = 2) + 
+
+    smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = amino, order = as.numeric(sortacceptor)),width = 2, size = 2) + 
     geom_bar(stat="identity")+ 
     
     xlab("Position")+ 
     ylab("Normalized Read Count") +   
-    scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon",ccatailname),expand = c(0.05, .01)) +
-    scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))  +
-    facet_grid( ~ Sample, scales="free", space= "free_y") 
+    #scale_y_continuous(breaks=breakfunc) +
+    scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon",ccatailname),expand = c(0.05, .01)) +
+    scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
+    
+    if(indepscales){
+    smallcovsummary = smallcovsummary + facet_wrap( ~ Sample, scales="free",ncol = 10)
+    }else{
+    smallcovsummary = smallcovsummary + facet_grid( ~ Sample, scales=myBreaks)
+    }
+    
 
 smallcovsummary <- configurecombine(smallcovsummary)
 
@@ -498,19 +501,11 @@ colnames(coveragemeltagg)[colnames(coveragemeltagg) == "x"]  <- "value"
 coveragemeltagg$Sample <- factor(coveragemeltagg$Sample,levels = unique(sampletable[,2]), ordered = TRUE)
 
 
-#acceptorType = trnatable[match(coveragemeltagg$Feature, trnatable[,1]),3]
-#acceptorType <- factor(acceptorType, levels = sort(unique(acceptorType)))
-#featnames = unique(as.character(coveragemeltagg$Feature))
-##tails = as.numeric(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), tail, 1)))
-##anticodonname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), function(x) { return( x[length(x) - 1] ) })))
-##aminoname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), function(x) { return( x[length(x) - 2] ) })))
-#coveragemeltagg$Feature = factor(as.character(coveragemeltagg$Feature), levels = featnames)
-#coveragemelt <- coveragemeltagg
 
 coveragemelt <- coverageprep(coveragemeltagg, samples, trnatable)
 
 acceptorType = trnatable[match(coveragemelt$Feature, trnatable[,1]),3]
-print(unique(acceptorType))
+#print(unique(acceptorType))
 
 
 #acceptorType <- factor(acceptorType, levels = sort(unique(acceptorType)))
@@ -526,7 +521,6 @@ endsmelt <- coverageprep(endsmeltagg, samples, trnatable)
 
 
  
-#print(coverageall$readstarts)
 readends  = cbind(coverageall$readstarts, coverageall$readends, coverageall$coverage - (coverageall$readstarts + coverageall$readends))
 
 colnames(readends) =  c("Read Starts", "Read ends","Coverage")
@@ -534,13 +528,11 @@ colnames(readends) =  c("Read Starts", "Read ends","Coverage")
 readsmeltagg  <- aggregate(readends, by=list(Feature = coverageall$Feature, Sample = sampletable[match(coverageall$Sample,sampletable[,1]),2], variable = coverageall$position), FUN=mean)
 readsmelt <- coverageprep(readsmeltagg, samples, trnatable)
 
-#print(head(readsmelt))
 
 allreadsmelt = melt(readsmelt, id.vars = c("Feature", "Sample", "variable"))
 
 
 colnames(allreadsmelt) =  c("Feature", "Sample","position","endtype","value")
-#print(head(allreadsmelt))
 pcount = 30
 
 
@@ -579,12 +571,12 @@ colnames(allmultmeltagg)[colnames(allmultmeltagg) == "x"]  <- "value"
 allmultmeltagg$Sample <- factor(allmultmeltagg$Sample,levels = unique(sampletable[,2]), ordered = TRUE)
 allmultmelt <- allmultmeltagg
 
-print("::))")
-print(head(coveragemelt))
+#print("::))")
+#print(head(coveragemelt))
 makecombplot(coveragemelt,filename=paste(combinedfile,sep= ""))
-#makecombplot(coveragemelt,filename=paste(uniquename, "-combinedfreecoverages.pdf",sep= ""), indepscales = TRUE)
-print("::))")
-
+makecombplot(coveragemelt,filename=paste(uniquename, "-combinedfreecoverages.pdf",sep= ""), indepscales = TRUE)
+#print("::))")
+q()
 modomicstable <- data.frame(trna = character(), mod = character(), pos = character(),stringsAsFactors=FALSE)
 
 modomicstable <- read.table(text ="",col.names = c("trna", "mod", "pos"),colClasses = c("character", "character", "character")) #(trna = character(), mod = character(), pos = character(),stringsAsFactors=FALSE)
@@ -603,9 +595,8 @@ stopmods = c("m1A","m2,2G","m1G","m1I","m3C")
 modomicstable <- modomicstable[modomicstable$mod %in% stopmods,]
 
 colnames(modomicstable)[colnames(modomicstable) == 'mod'] <- 'Modification'
-#() # 1 minute
 
-
+                                      
 #print("**||2")
 canvas = ggplot(coveragemelt,aes(x=variable,y=value), size = 2)
 if(max(coveragemelt$value) <= 1.1){
@@ -614,17 +605,9 @@ if(max(coveragemelt$value) <= 1.1){
 allcoverages <- canvas + theme_bw() + geom_bar(stat="identity") + facet_grid(Feature ~ Sample, scales="free", space = "fixed")  +  geom_vline(aes(xintercept = dist, col = Modification),size=.4,linetype = "longdash",data = modomicstable,show.legend=TRUE)#+theme(axis.text.y=element_text(colour="black",size=6),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8), strip.text.y = element_text(angle=0),strip.text.x = element_text(size = ,angle=0))+ ylab("Normalized Read Count") + xlab("tRNA position") +   scale_y_continuous(breaks=myBreaks) +scale_x_discrete(breaks=c("X1","X9","X26","X37","X44","X58","X65","X73"), labels=c(fiveprimename,"m1g","m22g","anticodon","varloop","m1a","65",ccatailname))   #+scale_x_discrete(breaks=c("X1","X37","X73"), labels=c(fiveprimename,"anticodon", ccatailname))
 }
 
-#scalefactor*(2 + 1*length(unique(coveragemelt$Feature)))
-#scalefactor*(2+4*length(unique(coveragemelt$Sample)))
-#q()
 
 ggsave(filename=outputfile, allcoverages,height=scalefactor*(2 + 1*length(unique(coveragemelt$Feature))),width=scalefactor*(2+4*length(unique(coveragemelt$Sample))), limitsize=FALSE, dpi = 600) #real one
 
-#ggsave(filename=outputfile, allcoverages)
-
-#q() #9 mins
-
-#print("**||3")
 
 if(!is.null(opt$directory) && FALSE){
 for (curramino in unique(acceptorType)){
@@ -668,33 +651,6 @@ if(!is.null(uniquename)){
 #allmultmelt[is.na(allmultmelt)] <- 0
 
 
-
-#print(head(coverageall))
-
-#print(head(coverageunique))
-
-
-
-
-#colnames(allmultmelttest)[colnames(allmultmelttest) == "position"]  <- "variable"
-
-#print(head(allmultmelt))
-
-#print(head(allmultmelttest))
-
-
-#allmultmeltagg <- aggregate(allmultmelt$value, by=list(Feature = allmultmelt$Feature, Sample = sampletable[match(allmultmelt$Sample,sampletable[,1]),2], maptype = allmultmelt$variable,variable = allmultmelt$position), FUN=mean)
-#allmultmeltagg = allmultmeltagg[allmultmeltagg$variable %in% trnapositions,]
-#colnames(allmultmeltagg)[colnames(allmultmeltagg) == "x"]  <- "value"
-#allmultmeltagg$Sample <- factor(allmultmeltagg$Sample,levels = unique(sampletable[,2]), ordered = TRUE)
-#allmultmelt <- allmultmeltagg
-
-#allmultmelt$maptype <- factor(allmultmelt$maptype, levels=c("Not Amino Specific","Isotype Specific","Isodecoder Specific","Transcript Specific"))
-#allmultmelt$variable = factor(allmultmelt$variable, levels=trnapositions)
-
-#allmultmelt <- allmultmelt[order(-as.numeric(allmultmelt$maptype)),]
-
-
 allmultmelt <- allmultmelt[order(-as.numeric(allmultmelt$maptype), match(allmultmelt$variable,trnapositions)),]
 rownames(allmultmelt) <- c()
 #print(unique(allmultmeltagg$variable))
@@ -730,21 +686,29 @@ anticodonname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE
 aminoname = as.character(unlist(lapply(strsplit(featnames, "-", fixed = TRUE), function(x) { return( x[length(x) - 2] ) })))
 featnames = featnames[order(aminoname, anticodonname,tails)]
 deletemelt$Feature = factor(as.character(deletemelt$Feature), levels = featnames)
-
+allmultmelt$amino = acceptorType
 
 #q()
+#print("**||2")
+#amino specific plots                
 print("**||2")
-#amino specific plots
+#write.table(allmultmelt, file = "cov.txt")
 
 #print(head(allmultmelt))
 
+allmultmelt$amino = trnatable[match(allmultmelt$Feature, trnatable[,1]),3]
+
+
 for (curramino in unique(acceptorType)){
 
-aminodata = allmultmelt[acceptorType == curramino,]
+
+aminodata = allmultmelt[allmultmelt$amino == curramino,]
 aminomodomicstable = modomicstable[modomicstable$Feature %in% unique(aminodata$Feature),]
-
-
-
+#write.table(aminodata, file = "covamin.txt")
+                                                                                                    
+#print(unique(aminodata$variable))
+#print("***|")
+#q()
 aminonamesec = paste(uniquename, "-",curramino,"_cov",outputformat,sep= "")
 makecovplot(aminodata,aminonamesec)
 
@@ -802,13 +766,6 @@ makecovplot(allmultmelt,paste(uniquename, "-coverages.pdf",sep= ""))
 
 }
 
-
-
-
-
-
-
-#print(head(locicoverages))
 
 locicoveragesagg <- aggregate(locicoverages$coverage, by=list(Feature = locicoverages$tRNA_name, Sample = sampletable[match(locicoverages$sample,sampletable[,1]),2], variable = locicoverages$position), FUN=mean)
 colnames(locicoveragesagg)[colnames(locicoveragesagg) == "x"]  <- "value"
