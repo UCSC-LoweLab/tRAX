@@ -16,43 +16,6 @@ from scipy.spatial.distance import euclidean
 
 
 
-'''
-~/pythonsource/TRAX/modelmismatch.py --covfile=mousetgirtplusalkbmism/mousetgirtplusalkbmism-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10_new/mm10-trnatable.txt
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=../mousetgirtminus/mousetgirtminus-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10_new/mm10-trnatable.txt  --samplefile=../mousetgirtminus.txt --bytrna  >trnacompare.txt
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=thioseq/thioseq-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg19/hg19-trnatable.txt  --samplefile=thiosamples.txt --bytrna  >trnacompare.txt
-
-
- ~/pythonsource/TRAX/modelmismatch.py --covfile=thioseq/thioseq-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg19/hg19-trnatable.txt  --samplefile=thiosamples.txt  --runname=thioseq >trnacompare.txt
- 
-~/pythonsource/TRAX/modelmismatch.py --covfile=angko/angko-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg19/hg19-trnatable.txt  --samplefile=angkosamples2.txt  --runname=angko2 
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=sharma2018/sharma2018-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=sharma2018samples.txt  --runname=sharma2018mism 
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=/projects/lowelab/users/abagi/data/trax_data/1_22_2020_c305_dmseq/trax_output_hg38_hek293ctrl/trax_output_hg38_hek293ctrl-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg38/hg38-trnatable.txt  --samplefile=/projects/lowelab/users/abagi/data/trax_data/1_22_2020_c305_dmseq/samples.txt  --runname=brainletsamples
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=sharma2017samples/sharma2017samples-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=sharma2017_samples.txt  --runname=sharma2017mism 
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=cruzsamples/cruzsamples-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=cruzsamples.txt  --runname=cruzsamplesmism 
-
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=ottrfullmouse/ottrfullmouse-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=mousevirusfull.txt  --runname=ottrfullmousec
-
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=humanexosome/humanexosome-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg19/hg19-trnatable.txt  --samplefilehumanexosomesamples.txt  --runname=humanexosome
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=humanexosome/humanexosome-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/hg19/hg19-trnatable.txt  --samplefilehumanexosomesamples.txt  --runname=humanexosome
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=epidtypesamples/epidtypesamples-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=epidtypesamples.txt  --runname=epidtype
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=spermatazoatype/spermatazoatype-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=spermatazoasamples.txt  --runname=spermatazoatype
-
-
-
-~/pythonsource/TRAX/modelmismatch.py --covfile=miseqcond/miseqcond-coverage.txt --trnafile=~/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt  --samplefile=miseqsamples.txt  --runname=miseqsamples
-
-'''
 gapchars = set("-._~")
 trnapositions = list(str(curr) for curr in list([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17a',18,19,20,'20a','20b',21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,'e1','e2','e3','e4','e5','e6','e7','e8','e9','e10','e11','e12','e13','e14','e15','e16','e17','e18','e19',46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76]))
 
@@ -244,6 +207,7 @@ def bhatcounts(firset, secset, pcounts = .01):
     secset = list(curr+pcounts for curr in secset)
     firprobs = list((curr)/(1.*sum(firset)) for curr in firset) #+ pcounts*len(firset)
     secprobs = list((curr)/(1.*sum(secset)) for curr in secset)
+    #print(sum(firprobs), file = sys.stderr)
     return bhattacharyyadistance(firprobs, secprobs)
     
 sqrt2 = np.sqrt(2)
@@ -255,8 +219,32 @@ def hellingercounts(firset, secset, pcounts = .01):
     secset = list(curr+pcounts for curr in secset)
     firprobs = list((curr)/(1.*sum(firset)) for curr in firset) #+ pcounts*len(firset)
     secprobs = list((curr)/(1.*sum(secset)) for curr in secset)
-    return hellingerdistance(firprobs, secprobs)
+    #print(sum(firprobs), file = sys.stderr)
 
+    return hellingerdistance(firprobs, secprobs)
+def maxbasedistance(firset, secset, pcounts = .01):
+    firset = list(curr+pcounts for curr in firset)
+    secset = list(curr+pcounts for curr in secset)
+    firprobs = list((curr)/(1.*sum(firset)) for curr in firset) #+ pcounts*len(firset)
+    secprobs = list((curr)/(1.*sum(secset)) for curr in secset)
+    maxdiff = 0
+    for i, curr in enumerate(firprobs):
+        currdist = abs(firprobs[i] - secprobs[i])
+        if  currdist > maxdiff:
+            maxdiff = currdist
+    return maxdiff
+def manhattandistance(firset, secset, pcounts = .01):
+    #manhattan distance
+    firset = list(curr+pcounts for curr in firset)
+    secset = list(curr+pcounts for curr in secset)
+    firprobs = list((curr)/(1.*sum(firset)) for curr in firset) #+ pcounts*len(firset)
+    secprobs = list((curr)/(1.*sum(secset)) for curr in secset)
+    totaldist = 0
+    for i, curr in enumerate(firprobs):
+        currdist = abs(firprobs[i] - secprobs[i])
+        totaldist += currdist
+    return totaldist
+        
 class covaggregate:
     def __init__(self, covpos, covlines, orignum = None):
         self.covpos = covpos
@@ -319,7 +307,8 @@ class covcomparison:
         return bhatcounts(self.firdata.basecounts(), self.secdata.basecounts())        
     def hdistance(self):
         return hellingercounts(self.firdata.basecounts(), self.secdata.basecounts())        
-        
+    def maxdistance(self):
+        return maxbasedistance(self.firdata.basecounts(), self.secdata.basecounts())
     def sameorigbase(self):
         return self.firdata.actualbase == self.secdata.actualbase
     def bothhavebase(self, base):
@@ -588,7 +577,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
     posmismatch = defaultdict(int)
     
     
-    print("\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"]), file=outfile)
+    print("\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","maxdistance","pval","chiscore"]), file=outfile)
     
     for groupname, samplelist, trnalist, poslist in pairgroup:
         
@@ -663,6 +652,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                #revbhatd = currpair.reversepair().bhatdistance()            
                #print >>sys.stderr, str(bhatd)+":"+str(revbhatd)
                hdistance = currpair.hdistance()
+               maxdistance = currpair.maxdistance()
                revhdist = currpair.reversepair().hdistance()            
                #print >>sys.stderr, str(hdistance)+":"+str(revhdist)
                postotal[currpair.firpos.position] += 1
@@ -675,7 +665,7 @@ def createtable(outfile, covcounts, pairgroup, minreads = 50, skipmatches = True
                    print >>sys.stderr, "\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),"["+",".join(str(curr) for curr in currpair.firdata.basecounts())+"]",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),"["+",".join(str(curr) for curr in currpair.secdata.basecounts())+"]",str(currentropy),str(bhatd),str(hdistance),str(pval),str(chiscore)])
 
                '''
-               print("\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,currpair.firdata.actualbase,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),""+",".join(str(curr) for curr in currpair.firdata.basecounts())+"",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,currpair.secdata.actualbase,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),""+",".join(str(curr) for curr in currpair.secdata.basecounts())+"",str(currentropy),str(bhatd),str(hdistance),str(pval),str(chiscore)]), file=outfile)
+               print("\t".join([currgroupname,currpair.firpos.Sample, currpair.firpos.Feature,currpair.firpos.position,currpair.firdata.actualbase,str(currpair.firdata.totalcounts()),str(currpair.firdata.matchpercent()),""+",".join(str(curr) for curr in currpair.firdata.basecounts())+"",currpair.secpos.Sample, currpair.secpos.Feature,currpair.secpos.position,currpair.secdata.actualbase,str(currpair.secdata.totalcounts()),str(currpair.secdata.matchpercent()),""+",".join(str(curr) for curr in currpair.secdata.basecounts())+"",str(currentropy),str(bhatd),str(hdistance),str(maxdistance),str(pval),str(chiscore)]), file=outfile)
                #currpair.compareprint() 
                if currentropy > 1:
                    posmismatch[currpair.firpos.position] += 1

@@ -49,6 +49,8 @@ for currsample in sampledata.getsamples():
 
     for currline in bamfile:
         currlength = len(currline.get_forward_sequence())
+        #print  (currline.get_forward_sequence(), file = sys.stderr)
+        #print  (currlength, file = sys.stderr)
         if currlength > sizecutoff:
             longoutfile.write(currline)
         else:

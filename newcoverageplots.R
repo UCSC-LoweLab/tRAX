@@ -5,10 +5,8 @@ library(plyr)
 library(gridExtra)
 library(getopt)
 
-library(ggplot2)
-library(reshape2)
+
 library(scales)
-library(getopt)
 
 allaminos = c('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Ile2','Leu','Lys','Met','iMet','fMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet') 
 

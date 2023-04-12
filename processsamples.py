@@ -152,7 +152,10 @@ class expdatabase:
         self.trnacounts = expname+"/"+expname+"-trnacounts.txt"
         
         self.normalizedcounts = expname+"/"+expname+"-normalizedreadcounts.txt"
+        self.normalizedtrnacounts = expname+"/trna/"+expname+"-trna_normalizedreadcounts.txt"
         self.sizefactors = expname+"/"+expname+"-SizeFactors.txt"
+        self.trnasizefactors = expname+"/trna/"+expname+"-SizeFactors.txt"
+
 
         self.genetypecounts=expname+"/"+expname+"-typecounts.txt"
         self.genetypeplot=expname+"/"+expname+"-typecounts.pdf"
@@ -161,11 +164,14 @@ class expdatabase:
         self.genetyperealplot=expname+"/"+expname+"-typerealcounts.pdf"
         
         self.trnaaminofile=expname+"/"+expname+"-aminocounts.txt"
+        self.trnauniqaminofile=expname+"/unique/"+expname+"-unique-aminos.txt" 
+
         self.trnaaminoplot=expname+"/"+expname+"-aminocounts.pdf"
         self.trnaaminorealplot=expname+"/"+expname+"-aminorealcounts.pdf"
         
         
         self.trnaanticodonfile=expname+"/"+expname+"-anticodoncounts.txt"
+        self.trnauniqanticodonfile=expname+"/unique/"+expname+"-unique-anticodons.txt"
         
         self.trnalengthfile=expname+"/"+expname+"-readlengths.txt"
         self.trnalengthplot=expname+"/"+expname+"-readlengths.pdf"
@@ -196,7 +202,8 @@ class expdatabase:
         
         self.pcaplot = expname+"/"+expname+"-pca.pdf"
         self.pcatrnaplot = expname+"/"+expname+"-pcatrna.pdf"
-        
+        self.pcaacplot = expname+"/unique/"+expname+"-pcaac.pdf"
+
         self.qaoutputname = expname+"/"+expname+"-qa.html"
         
         
@@ -222,10 +229,10 @@ def countfeatures(samplefile, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = "./"
     #runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefile,expinfo.pcaplot)
     #runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnacounts,samplefile,expinfo.pcatrnaplot)
 
-def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  ignoresizefactors = False, countfrags = False, bamnofeature = False, cores = 8):
+def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  ignoresizefactors = False, countfrags = False, bamnofeature = False, fraguniq = True, cores = 8):
     if not ignoresizefactors:
          
-        countreadtypes.main(sizefactors=expinfo.sizefactors,combinereps= True , bamdir = bamdir, otherseqs = trnainfo.otherseqs, samplefile=samplefile,maturetrnas=[trnainfo.maturetrnas],trnatable=trnainfo.trnatable,trnaaminofile=expinfo.trnaaminofile,trnaanticodonfile = expinfo.trnaanticodonfile,ensemblgtf=ensgtf,trnaloci=[trnainfo.locifile],countfile=expinfo.genetypecounts,realcountfile=expinfo.genetyperealcounts, mismatchfile=expinfo.mismatchcountfile, bedfile= bedfiles,readlengthfile =  expinfo.trnalengthfile ,countfrags=countfrags, bamnofeature = bamnofeature,uniquename = expinfo.uniquename, cores = cores)
+        countreadtypes.main(sizefactors=expinfo.sizefactors,combinereps= True , bamdir = bamdir, otherseqs = trnainfo.otherseqs, samplefile=samplefile,maturetrnas=[trnainfo.maturetrnas],trnatable=trnainfo.trnatable,trnaaminofile=expinfo.trnaaminofile,trnaanticodonfile = expinfo.trnaanticodonfile,ensemblgtf=ensgtf,trnaloci=[trnainfo.locifile],countfile=expinfo.genetypecounts,realcountfile=expinfo.genetyperealcounts, mismatchfile=expinfo.mismatchcountfile, bedfile= bedfiles,readlengthfile =  expinfo.trnalengthfile ,countfrags=countfrags, bamnofeature = bamnofeature,uniquename = expinfo.uniquename, fraguniq = fraguniq, cores = cores)
         #Plot reads by gene type and tRNAs by amino acid
         #runrscript(scriptdir+"/genefeatures.R",expinfo.genetypecounts,expinfo.genetypeplot)
         #runrscript(scriptdir+"/featuretypes.R",expinfo.trnaaminofile,expinfo.trnaaminoplot, "all")
@@ -457,6 +464,8 @@ if not os.path.exists(expname+"/pretRNAs"):
     os.makedirs(expname+"/pretRNAs")
 if not os.path.exists(expname+"/unique"):
     os.makedirs(expname+"/unique")
+if not os.path.exists(expname+"/trna"):
+    os.makedirs(expname+"/trna")
 
     
     
@@ -583,8 +592,12 @@ if pairfile:
             print("Likely that a sample did not contain enough reads", file=sys.stderr)
             sys.exit(1)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefilename,expinfo.pcaplot)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/trna","trna",expinfo.trnacounts,samplefilename, pairfile)
+
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnacounts,samplefilename,expinfo.pcatrnaplot)
     runrscript(scriptdir+"/makescatter.R",expname,expinfo.normalizedcounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)
+    runrscript(scriptdir+"/makescatter.R",expname+"/trna",expinfo.normalizedtrnacounts,trnainfo.trnatable,expinfo.genetypes,samplefilename,pairfile)
+    #Rscript /projects/lowelab/users/holmes/pythonsource/TRAX//makescatter.R maydietcomp3/trna maydietcomp3/trna/maydietcomp3-normalizedreadcounts.txt /soe/holmes/pythonsource/trnatest/trnadbs/mm10/mm10-trnatable.txt maydietcomp3/maydietcomp3-genetypes.txt ottrdietallsamples.txt ottrdietpairs.txt
 
     runrscript(scriptdir+"/ccaendplot.R","--ends="+expinfo.trnaendfile,"--trna="+trnainfo.trnatable, "--samples="+samplefilename,"--directory="+expname+"/","--runname="+expname)
     
@@ -597,10 +610,15 @@ elif not nosizefactors:
             sys.exit(1)    
     else:
         deseqret = runrscript(scriptdir+"/analyzecounts.R",expname,expinfo.genecounts,samplefilename) 
-        print(scriptdir+"/analyzecounts.R",expname,expinfo.genecounts,samplefilename, file=sys.stderr)
+         
+
+        #print(scriptdir+"/analyzecounts.R",expname,expinfo.genecounts,samplefilename, file=sys.stderr)
+        #print(scriptdir+"/analyzetrnas.R",expname,expinfo.genecounts,samplefilename, file=sys.stderr)
         if deseqret == 2:
             print("Deseq analysis failed, cannot continue", file=sys.stderr)
             sys.exit(1)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/trna","trna",expinfo.trnacounts,samplefilename)
+
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefilename,expinfo.pcaplot)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnacounts,samplefilename,expinfo.pcatrnaplot)
 
@@ -608,13 +626,23 @@ elif not nosizefactors:
 
 #Count the reads by gene type
 print("Counting Read Types", file=sys.stderr)
-counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = bamdir, ignoresizefactors = nosizefactors,countfrags =  splittypecounts, bamnofeature = bamnofeature, cores = cores)
+counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = bamdir, ignoresizefactors = nosizefactors,countfrags =  splittypecounts, bamnofeature = bamnofeature, fraguniq = nofrag,cores = cores)
 
 if pairfile:
-    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename,pairfile)
-else:
-    runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.sizefactors,trnainfo.trnatable,samplefilename)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniquefile,samplefilename, pairfile)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueanticodons",expinfo.trnauniqanticodonfile,samplefilename, pairfile)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueaminos",expinfo.trnauniqaminofile,samplefilename, pairfile)
+    runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnaanticodonfile,samplefilename,expinfo.pcaacplot)
+    
 
+    #runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.trnasizefactors,trnainfo.trnatable,samplefilename,pairfile)
+else:
+    #runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.trnasizefactors,trnainfo.trnatable,samplefilename)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniquefile,samplefilename)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueanticodons",expinfo.trnauniqanticodonfile,samplefilename)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueaminos",expinfo.trnauniqaminofile,samplefilename)
+    
+    
 
 #coverage plot of tRNAs
 print("Generating Read Coverage plots", file=sys.stderr)      

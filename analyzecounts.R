@@ -107,10 +107,12 @@ deseq2Data <- cds
 
 #not sure why this fails sometimes
 
-heatmaps = TRUE
+heatmaps = FALSE
 if(heatmaps){
 
 
+
+#Can fail sometimes
 deseq2VST <- vst(deseq2Data,fitType = "local")
 write.table(as.data.frame(assay(deseq2VST)),paste(experimentname,"/",experimentname,"-vst.txt", sep = ""), col.names=NA )
 
@@ -309,7 +311,8 @@ currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + g
 
 ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
 
-trnasampledata = currsampledata[grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE) | grepl( "tRX", as.character(currsampledata$genename), fixed = TRUE),]
+
+trnasampledata = currsampledata[(grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE) | grepl( "tRX", as.character(currsampledata$genename), fixed = TRUE)) & ( grepl( "fiveprime", as.character(currsampledata$genename)) | grepl( "threeprime", as.character(currsampledata$genename)) | grepl( "other", as.character(currsampledata$genename)) | grepl( "wholecounts", as.character(currsampledata$genename))) ,]
 
 #print(trnasampledata)
 trnapvalcutoff = sort(trnasampledata$currprob)[10]

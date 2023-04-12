@@ -403,6 +403,7 @@ def transcriptcoverage(samplecoverages, mismatchreport, trnalist,sampledata,size
     samples = sampledata.getsamples()
     for currfeat in trnalist:
         #print >>sys.stderr, samplecoverages[list(samples)[0]].allcoverages.keys()
+        #print(currfeat.name, file = sys.stderr)
         totalreads = sum(samplecoverages[currsample].allcoverages[currfeat.name].totalreads for currsample in samples)
         ambigreads = sum(samplecoverages[currsample].multaminocoverages[currfeat.name].totalreads for currsample in samples)
         if totalreads - ambigreads < mincoverage:
@@ -749,7 +750,7 @@ def testmain(**argdict):
         uniquecoverages = dict()
         endpoint = trnanum + trnachunksize
         if len(trnalist) < endpoint:
-            endpoint = len(trnalist) - 1
+            endpoint = len(trnalist)
         #print >>sys.stderr, "chunk: "+str(trnanum)+"-"+str(endpoint)
         trnasubset = trnalist[trnanum:endpoint]
         locisubset = locilist[trnanum:endpoint]

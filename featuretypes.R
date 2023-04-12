@@ -73,7 +73,7 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 
 
 
-ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
+currplot = ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
 	geom_bar(position = "fill",stat="identity") +
     geom_bar(position = "fill",stat="identity",color="black",show.legend=FALSE) + 
     scale_y_continuous(labels = percent_format()) +
@@ -87,5 +87,5 @@ ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + th
     #scale_fill_manual(values = typepal)+
     theme(axis.title.x = element_text(face="bold", size=15), axis.text.x = element_text(face="bold", size=9,angle = 90, vjust = .5)) #+scale_colour_gradient() #+ scale_fill_brewer( palette="RdPu")
 
-ggsave(filename=args[2])
+ggsave(filename=args[2],currplot, width = 1 + .25*length(unique(countsmelt$variable)), limitsize = FALSE) 
     
