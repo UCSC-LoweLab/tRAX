@@ -21,7 +21,7 @@ parser.add_argument('--sizecutoff',
 
 args = parser.parse_args()
 
-sizecutoff = 60
+sizecutoff = 65
 samplefilename = args.samplefile
 newname = args.samplename
 if args.sizecutoff is not None:
@@ -56,10 +56,10 @@ for currsample in sampledata.getsamples():
         else:
             shortoutfile.write(currline)
         
-longsamplefile = open(newname+"_long.txt", "w")
+longsamplefile = open(newname+"_"+str(sizecutoff)+"long.txt", "w")
 for currline in longsamplelabels:
     print(currline, file = longsamplefile)
-shortsamplefile =  open(newname+"_short.txt", "w") 
+shortsamplefile =  open(newname+"_"+str(sizecutoff)+"short.txt", "w") 
 for currline in shortsamplelabels:
     print(currline, file = shortsamplefile)
     

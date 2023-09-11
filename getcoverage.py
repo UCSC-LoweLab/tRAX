@@ -663,7 +663,8 @@ def testmain(**argdict):
     
     numfile = argdict["numfile"]
     locinums = argdict["locinums"]
-    
+    uniqueonly = argdict["uniqueonly"]
+
     
     orgtype = "euk"
     if "orgtype" in argdict:
@@ -756,13 +757,13 @@ def testmain(**argdict):
         locisubset = locilist[trnanum:endpoint]
         if not threadmode:
             for currsample in samples:
-                samplecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend)
+                samplecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True)
                 #uniquecoverages[currsample] = getsamplecoverage(currsample, sampledata, trnalist,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True)
                 locicoverages[currsample] =   getlocicoverage(  currsample, sampledata, locisubset,  maxmismatches = maxmismatches, minextend = minextend)
         
         else:
             for currsample in samples:
-                trackargs.append(compressargs(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend))
+                trackargs.append(compressargs(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True))
                 #trackuniqargs.append(compressargs(currsample, sampledata, trnasubset,  trnaseqs,  maxmismatches = maxmismatches, minextend = minextend, uniqueonly = True))
         
                 lociargs.append(compressargs(  currsample, sampledata, locisubset,  maxmismatches = maxmismatches, minextend = minextend))

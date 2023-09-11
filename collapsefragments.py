@@ -17,7 +17,7 @@ def readmultifastq(fqfile, fullname = False):
     if fqfile == "stdin":
         fqfile = sys.stdin
     elif fqfile.endswith(".gz"):
-        fqfile = gzip.open(fqfile, "rb")
+        fqfile = gzip.open(fqfile, "rt")
     else:
         fqfile = open(fqfile, "r")
     currloc = 0
@@ -51,23 +51,25 @@ def readmultifastq(fqfile, fullname = False):
             sequence += line
             
 class prunedict:
-    def __init__(self, maxkeys = 10000000):
+    def __init__(self, maxkeys = 1000000):
         self.counts = defaultdict(int) 
         self.maxkeys = maxkeys 
         self.trimcutoff = max([10,self.maxkeys/100000])
         self.totalkeys = 0
         self.trimmed = 0
-    def trim(self):
+    def trim(self, trimcutoff = None):
         #print >>sys.stderr, "**"
         newdict = defaultdict(int) 
         trimmed = 0
+        if trimcutoff is None:
+            trimcutoff = self.trimcutoff
         for curr in self.counts.keys():
-            if self.counts[curr] > self.trimcutoff:
+            if self.counts[curr] > trimcutoff:
                 newdict[curr] = self.counts[curr]
             else:
                 trimmed += 1
         self.trimmed += trimmed
-        #print >>sys.stderr, str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff)
+        #print (str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff), file = sys.stderr)
         self.totalkeys = len(list(self.counts.keys()))
         self.counts = newdict
         
@@ -80,12 +82,12 @@ class prunedict:
             self.totalkeys += 1
         self.counts[key] = count
         if self.totalkeys > self.maxkeys:
-            #self.trim()
+            self.trim()
 
             #print >>sys.stderr, str(len(self.counts.keys())) +"/"+ str(len(self.newdict.keys())) +":"+str(1.*len(self.counts.keys())/len(self.newdict.keys()))
             if self.totalkeys > self.maxkeys:
                 self.trimcutoff *= 1.1
-    def iterkeys(self):
+    def keys(self):
         return list(self.counts.keys())
             
 
@@ -106,7 +108,7 @@ for currsample in samples:
             #print >>sys.stderr, str(total)
     if not allmode:  
         pass
-        #seqcount[currsample].trim()
+        #seqcount[currsample].trim(trimcutoff = 1000)
 
 seqfile = open(sys.argv[2], "w")
 

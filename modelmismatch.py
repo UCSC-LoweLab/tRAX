@@ -359,7 +359,7 @@ class covdata:
             for currsample in samplelist:
                 for currfeat in featlist:
                     currcovpos = covpos(currsample, currfeat, currpos)
-                    print(str(currpos)+":"+currsample+":"+currfeat, file=sys.stderr)
+                    #print(str(currpos)+":"+currsample+":"+currfeat, file=sys.stderr)
                     if currcovpos in self.covdict:
                         print(self.covdict[currcovpos].mismatchpercent(), file=sys.stderr)
                     if currcovpos in self.covdict and self.covdict[currcovpos].mismatchpercent() > minmismatch:
@@ -720,9 +720,11 @@ def createcombinedtable(outfile, covcounts, repgroups, minreads = 50, pairfile =
             #print >>outfile, "\t".join([groupname,currsample,currtrna,currpos,",".join(str(curr) for curr in currset.basecounts())])
     #print >>outfile, "\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firtotal","firpercent","fircounts","secname", "secfeat","secpos","secrefbase","sectotal","secpercent","seccounts","entropy","bdist","hdist","pval","chiscore"])
     print("\t".join(["groupname","firname", "firfeat","firpos","firrefbase","firpercent","firsamples","fircounts","secname","secpercent","secsamples","seccounts","bdist"]), file=outfile)
+    #print("|||||;;;;", file=sys.stderr)
     if pairfile is not None:
         allpairs = readpairfile(pairfile)
     for currtrna in alltrnas:
+        
         for currpos in allpos:
             if pairfile is None:
                 allpairs = itertools.combinations(allsamples, 2)

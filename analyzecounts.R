@@ -25,7 +25,7 @@ return(newtable)
 
 colgetavgname =  function(currtable, newname){
 
-newtable = currtable[,c(2),drop = FALSE]
+newtable = currtable[,c(1),drop = FALSE]
 colnames(newtable)[1] <- newname
 return(newtable)
 }
@@ -135,8 +135,10 @@ reslist = lapply(compareresults, function(currresult){colrename(currresult[[2]],
 
 resloglist = lapply(compareresults, function(currresult){colgetlogname(currresult[[2]],currresult[[1]])})
 
-resavglist = lapply(compareresults, function(currresult){colgetlogname(currresult[[2]],currresult[[1]])})                                
+resavglist = lapply(compareresults, function(currresult){colgetavgname(currresult[[2]],currresult[[1]])})                                
 
+#print(compareresults[[2]])
+#q()
 
 #print(compareresults)
 #print(length(dispersions(cds)))
@@ -165,6 +167,8 @@ write.table(allprobs,paste(experimentname,"/",experimentname,"-padjs.txt", sep =
 alllogvals = Reduce(function(x,y) cbind(x,y), resloglist)
 write.table(alllogvals,paste(experimentname,"/",experimentname,"-logvals.txt", sep = ""),sep="	")
 
+allavgvals = Reduce(function(x,y) cbind(x,y), resavglist)
+write.table(allavgvals,paste(experimentname,"/",experimentname,"-avgs.txt", sep = ""),sep="	")
 
 
 
@@ -181,11 +185,12 @@ currpair = paste(currcomp[1], currcomp[2], sep ="_")
 
 currlogval = alllogvals[,c(currpair)]
 currprob = allprobs[,c(currpair)]
+curravg = allavgvals[,c(currpair)]
 genename = rownames(allprobs)
 
 #pairname = sub( ".", "_",currpair,fixed=TRUE)
 pairname = sub( ":", "_",currpair,fixed=TRUE)
-currsampledata = data.frame(genename, currlogval, currprob)
+currsampledata = data.frame(genename, currlogval, currprob,curravg )
 
 #print(head(allprobs))
 #print("$$**")
@@ -285,6 +290,12 @@ ggsave(paste(experimentname,"/",pairname,"-deseqzscoreheatmap",".pdf",sep= ""),h
 
 }
 
+paircols <- as.character(sampledata[sampledata[,2] == currcomp[[1]] | sampledata[,2] == currcomp[[2]],1])
+
+print(paircols)
+currsampledata$pairmeans <- apply(normalizedrnas[,paircols], 1, mean)
+
+
 
 
 displaygenes = c()
@@ -295,21 +306,25 @@ pvalcutoff = sort(currsampledata$currprob)[10]
 
 displayfeats = ifelse(abs(currsampledata$currlogval) > 1.5 & currsampledata$currprob < pvalcutoff, as.character(currsampledata$genename), "")
 
-#print("**") 
-#print(rownames(currsampledata))
-#print(head(displayfeats))
-
-
-#currsampledata = cbind(currlogval,currprob) # 
-#print(head(currsampledata))
-#currsampledata = currsampledata[currsampledata$currprob > .005,]
-#print(head(currsampledata))
-#print(currcomp[[1]])
-#print(currcomp[[2]])
-currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+currsampledata$siggenes = ifelse(!is.na(currsampledata$currprob) & currsampledata$currprob < .05, "Significant", "Not Significant")
+currplot <- ggplot(currsampledata, aes(x=currlogval, y=currprob)) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
 
 
 ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
+
+
+#genecond = rep(c("NS"),times=nrow(currsampledata))
+upregname = paste("Up in ",currcomp[[1]])
+downregname = paste("Up in ",currcomp[[2]])
+
+genecond =  ifelse(!is.na(currsampledata$currprob) & currsampledata$currlogval > 1.5 & currsampledata$currprob < .05, upregname, ifelse(!is.na(currsampledata$currprob) & currsampledata$currlogval < -1.5 & currsampledata$currprob < .05, downregname, "NS")) #
+#genecond =   
+#print(genecond)
+
+genecond = factor(genecond, levels = c(upregname,downregname,"NS"))
+
+currplot <- ggplot(currsampledata, aes(x=pairmeans, y=currlogval, color = genecond)) + geom_point(size = 1) + scale_colour_discrete(drop=TRUE,limits = levels(genecond), type = c("red","blue","black")) +scale_x_continuous(trans='log2') +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+geom_hline(yintercept = dashinterc, linetype = 2) + geom_hline(yintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Normalized Mean")+ylab("Log2-Fold Change")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) #+ labs(caption = c(currcomp[[1]], currcomp[[2]])) + theme(plot.caption = element_text(size = 16,vjust=c(1, 0), hjust=c(0, 0))) 
+ggsave(paste(experimentname,"/",pairname ,"-maplot",outputformat,sep= ""), currplot) 
 
 
 trnasampledata = currsampledata[(grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE) | grepl( "tRX", as.character(currsampledata$genename), fixed = TRUE)) & ( grepl( "fiveprime", as.character(currsampledata$genename)) | grepl( "threeprime", as.character(currsampledata$genename)) | grepl( "other", as.character(currsampledata$genename)) | grepl( "wholecounts", as.character(currsampledata$genename))) ,]
@@ -320,7 +335,7 @@ trnapvalcutoff = sort(trnasampledata$currprob)[10]
 trnadisplayfeats = ifelse(abs(trnasampledata$currlogval) > 1.5 & trnasampledata$currprob < trnapvalcutoff, as.character(trnasampledata$genename), "")
 
 
-currplot <- ggplot(trnasampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+currplot <- ggplot(trnasampledata, aes(x=currlogval, y=currprob)) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
 ggsave(paste(experimentname,"/",pairname ,"-volcano_tRNA",outputformat,sep= ""), currplot) 
 
 }
@@ -338,9 +353,11 @@ colnames(alllogvals) <- paste("log2", colnames(alllogvals), sep = "_")
 #print("***||")
 
 colnames(allprobs) <- paste("pval", colnames(allprobs), sep = "_")
+colnames(allavgvals) <- paste("mean", colnames(allavgvals), sep = "_")
+
 allcombinevals = cbind(alllogvals,allprobs)
 
-#write.table(allcombinevals,paste(experimentname,"/",experimentname,"-combine.txt", sep = ""),sep="	", col.names=NA,quote=FALSE) 
+write.table(allcombinevals,paste(experimentname,"/",experimentname,"-combine.txt", sep = ""),sep="	", col.names=NA,quote=FALSE) 
 
 sortcombinevals = allcombinevals[order(apply(alllogvals,1,max)),]
 

@@ -232,7 +232,7 @@ for currsample in sampleorder:
         seqprepcommmand = ""
         if umilength  > 0:
             seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_m.fastq.gz '
-            seqprepcommmand += ";umi_tools extract -v 0 --stdin="+currsample+"_m.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz -L '+currsample+'_umilog.txt'
+            seqprepcommmand += ";umi_tools extract -v 0 --stdin="+currsample+"_m.fastq.gz "+umiargs+" --bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_merge.fastq.gz -L '+currsample+'_umilog.txt'
         else:
             seqprepcommmand = 'SeqPrep -L '+str(minsize)+ ' -A '+firadapter+' -B '+secadapter +' -f '+samplefiles[currsample][0]+'  -r '+samplefiles[currsample][1]+' -1 '+currsample+'_left.fastq.gz     -2 '+currsample+'_right.fastq.gz   -s '+currsample+'_merge.fastq.gz'
 
@@ -249,11 +249,11 @@ for currsample in sampleorder:
         #seqprepcommmand = program+' -x '+bowtiedb+' -k '+str(maxmaps)+' --very-sensitive --ignore-quals --np 5 --reorder -p '+str(numcores)+' -U '+unpaired
         #cutadapt -m 15 --adapter='TGGAATTCTCGGGTGCCAAGG'  Testicular_sperm/Fraction4/Fraction4_S2_L002_R1_001.fastq.gz                           | gzip -c > trimmed/Fraction4_S2_L002_R1_001_TRIM.fastq.gz                      
         if umilength > 0:
-            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_t.fastq.gz'
-            cutadaptcommand += ";umi_tools extract --stdin="+currsample+"_t.fastq.gz "+umiargs+"--bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz -L '+currsample+'_umilog.txt'
+            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +" --untrimmed-output="+currsample+'_untrim.fastq.gz'+ ' | gzip -c >'+ currsample+'_t.fastq.gz'
+            cutadaptcommand += ";umi_tools extract --stdin="+currsample+"_t.fastq.gz "+umiargs+" --bc-pattern="+("N"*int(umilength))+" --stdout="+currsample+'_trimmed.fastq.gz -L '+currsample+'_umilog.txt'
             
         else:
-            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +' | gzip -c >'+ currsample+'_trimmed.fastq.gz'
+            cutadaptcommand = 'cutadapt -m '+str(minsize)+ ' --adapter='+firadapter+' '+samplefiles[currsample][0]  +" --untrimmed-output="+currsample+'_untrim.fastq.gz'+' | gzip -c >'+ currsample+'_trimmed.fastq.gz'
 
 
         outputfiles.append(currsample+'_trimmed.fastq.gz')

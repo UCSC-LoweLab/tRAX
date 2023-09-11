@@ -85,7 +85,8 @@ parser.add_argument('--skipfqcheck', action="store_true", default=False,
                    help='Skips the check that the fq files match bam files')
 parser.add_argument('--bamdir',
                    help='directory for placing bam files (default current working directory)')
-
+parser.add_argument('--uniqueonlycov', action="store_true", default=False,
+                   help='Show only unique coverage')
 
 
 
@@ -172,6 +173,8 @@ class expdatabase:
         
         self.trnaanticodonfile=expname+"/"+expname+"-anticodoncounts.txt"
         self.trnauniqanticodonfile=expname+"/unique/"+expname+"-unique-anticodons.txt"
+        self.trnauniqcountsfile=expname+"/unique/"+expname+"-unique-trnas.txt"
+        
         
         self.trnalengthfile=expname+"/"+expname+"-readlengths.txt"
         self.trnalengthplot=expname+"/"+expname+"-readlengths.pdf"
@@ -223,7 +226,7 @@ def makefeaturebed(trnainfo,expinfo, ensgtf, bedfiles):
 
 
 def mapsamples(samplefile, trnainfo,expinfo, lazyremap, bamdir = "./",  cores = 8, minnontrnasize = 20, local = False, skipfqcheck = False):
-    mapreads.testmain(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo,trnamapfile = expinfo.trnamapfile,lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize, local = local, skipfqcheck = skipfqcheck)
+    mapreads.main(samplefile=samplefile, trnafile=trnainfo.trnatable,bowtiedb=trnainfo.bowtiedb, bamdir = bamdir, otherseqs = trnainfo.otherseqs,logfile=expinfo.maplog,mapfile=expinfo.mapinfo,trnamapfile = expinfo.trnamapfile,lazy=lazyremap, cores = cores,minnontrnasize = minnontrnasize, local = local, skipfqcheck = skipfqcheck)
 def countfeatures(samplefile, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = "./", cores = 8, maxmismatches = None):
     countreads.testmain(samplefile=samplefile,ensemblgtf=ensgtf,maturetrnas=[trnainfo.maturetrnas], bamdir = bamdir, otherseqs = trnainfo.otherseqs,trnaloci=[trnainfo.locifile],removepseudo=True,genetypefile=expinfo.genetypes,trnatable=trnainfo.trnatable,countfile=expinfo.genecounts,bedfile=bedfiles, trnacounts = expinfo.trnacounts,trnaends = expinfo.trnaendfile,trnauniquecounts = expinfo.trnauniquefile,nofrag=nofrag, cores = cores, maxmismatches = maxmismatches)
     #runrscript(scriptdir+"/pcareadcounts.R",expinfo.normalizedcounts,samplefile,expinfo.pcaplot)
@@ -254,14 +257,14 @@ def counttypes(samplefile, trnainfo,expinfo, ensgtf, bedfiles, bamdir = "./",  i
     runrscript(scriptdir+"/readlengthhistogram.R",expinfo.trnalengthfile,samplefile,expinfo.trnalengthplot)
     runrscript(scriptdir+"/plotreadmismatches.R",expinfo.mismatchcountfile,expinfo.mismatchcountplot)
         
-def gettrnacoverage(samplefile, trnainfo,expinfo, bamdir = "./",  orgtype = "euk",ignoresizefactors = False, cores = 8, mincoverage = None):
+def gettrnacoverage(samplefile, trnainfo,expinfo, bamdir = "./",  orgtype = "euk",ignoresizefactors = False, cores = 8, mincoverage = None, uniqueonly = False):
     #print >>sys.stderr, orgtype
     if not ignoresizefactors:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign, bamdir = bamdir, lociedgemargin=30,sizefactors=expinfo.sizefactors,orgtype = orgtype,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, numfile=trnainfo.trnanums, locinums = trnainfo.locinums,allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],locibed=[trnainfo.locifile],locistk=trnainfo.locialign, bamdir = bamdir, lociedgemargin=30,sizefactors=expinfo.sizefactors,orgtype = orgtype,locicoverage=expinfo.locicoveragefile,stkfile=trnainfo.trnaalign, numfile=trnainfo.trnanums, locinums = trnainfo.locinums,allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage, uniqueonly = uniqueonly)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")
     else:
-        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname,orgtype = orgtype, bamdir = bamdir, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage)
+        getcoverage.testmain(samplefile=samplefile,bedfile=[trnainfo.maturetrnas],stkfile=trnainfo.trnaalign,uniquename=expname+"/"+expname,orgtype = orgtype, bamdir = bamdir, allcoverage=expinfo.trnacoveragefile,trnafasta = trnainfo.trnafasta, cores = cores, uniqcoverage = expinfo.trnauniqcoveragefile, mincoverage = mincoverage, uniqueonly = uniqueonly)
         runrscript(scriptdir+"/newcoverageplots.R","--cov="+expinfo.trnacoveragefile,"--locicov="+expinfo.locicoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--allcov="+expinfo.trnacoverageplot,"--runname="+expname,"--modomics="+trnainfo.modomics,"--combinecov="+expinfo.trnacombinecoverageplot,"--directory="+expname)
         
         runrscript(scriptdir+"/boxplotmismatches.R","--runname="+expinfo.expname,"--mismatch="+expinfo.trnacoveragefile,"--trna="+trnainfo.trnatable,"--samples="+samplefile,"--directory="+expname+"/mismatch/")
@@ -319,6 +322,7 @@ mismatch = False
 paironly= args.paironly
 splittypecounts = False
 bamnofeature = args.dumpother
+uniqueonlycov = args.uniqueonlycov
 
 minnontrnasize = args.minnontrnasize
 
@@ -387,7 +391,7 @@ def testrstats():
         print("Could not find R version number", file=sys.stderr)
 
 
-        
+#print(mapreads.__file__, file = sys.stderr)
 testrstats()
 get_location("Rscript")
 
@@ -401,9 +405,10 @@ gitversion, gitversionhash = getgithash(scriptdir)
 
 sampledata = samplefile(samplefilename)
 samples = sampledata.getsamples()
-if len(samples) < len(set(samples)):
-    print("duplicate sample names in sample file", file=sys.stderr)
+if len(samples) > len(set(samples)):
+    print("duplicate sample names in first column of sample file", file=sys.stderr)
     sys.exit(1)
+    
 for currsample in samples:
     if '-' in currsample:
         print("Sample names containing '-' character are not allowed", file=sys.stderr)
@@ -626,10 +631,10 @@ elif not nosizefactors:
 
 #Count the reads by gene type
 print("Counting Read Types", file=sys.stderr)
-counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = bamdir, ignoresizefactors = nosizefactors,countfrags =  splittypecounts, bamnofeature = bamnofeature, fraguniq = nofrag,cores = cores)
+counttypes(samplefilename, trnainfo,expinfo, ensgtf, bedfiles,  bamdir = bamdir, ignoresizefactors = nosizefactors,countfrags =  splittypecounts, bamnofeature = bamnofeature, fraguniq = not nofrag,cores = cores)
 
 if pairfile:
-    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniquefile,samplefilename, pairfile)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniqcountsfile,samplefilename, pairfile)
     runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueanticodons",expinfo.trnauniqanticodonfile,samplefilename, pairfile)
     runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueaminos",expinfo.trnauniqaminofile,samplefilename, pairfile)
     runrscript(scriptdir+"/pcareadcounts.R",expinfo.trnaanticodonfile,samplefilename,expinfo.pcaacplot)
@@ -638,7 +643,7 @@ if pairfile:
     #runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.trnasizefactors,trnainfo.trnatable,samplefilename,pairfile)
 else:
     #runrscript(scriptdir+"/analyzeunique.R",expname,expinfo.uniquename+"-trnas.txt",expinfo.uniquename+"-anticodons.txt",expinfo.uniquename+"-aminos.txt",expinfo.trnasizefactors,trnainfo.trnatable,samplefilename)
-    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniquefile,samplefilename)
+    runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniquetrnas",expinfo.trnauniqcountsfile,samplefilename)
     runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueanticodons",expinfo.trnauniqanticodonfile,samplefilename)
     runrscript(scriptdir+"/analyzetrnas.R",expname,expname+"/unique","uniqueaminos",expinfo.trnauniqaminofile,samplefilename)
     
@@ -647,7 +652,7 @@ else:
 #coverage plot of tRNAs
 print("Generating Read Coverage plots", file=sys.stderr)      
 #print >>sys.stderr, orgtype
-gettrnacoverage(samplefilename, trnainfo,expinfo, bamdir = bamdir, orgtype = orgtype, ignoresizefactors = nosizefactors, cores = cores, mincoverage = mincoverage)
+gettrnacoverage(samplefilename, trnainfo,expinfo, bamdir = bamdir, orgtype = orgtype, ignoresizefactors = nosizefactors, cores = cores, mincoverage = mincoverage, uniqueonly = uniqueonlycov)
 
 #coverage plot of pre-tRNAs
 #getlocuscoverage(samplefilename, trnainfo,expinfo, nosizefactors)

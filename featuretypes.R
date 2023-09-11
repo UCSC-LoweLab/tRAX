@@ -87,5 +87,5 @@ currplot = ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="ident
     #scale_fill_manual(values = typepal)+
     theme(axis.title.x = element_text(face="bold", size=15), axis.text.x = element_text(face="bold", size=9,angle = 90, vjust = .5)) #+scale_colour_gradient() #+ scale_fill_brewer( palette="RdPu")
 
-ggsave(filename=args[2],currplot, width = 1 + .25*length(unique(countsmelt$variable)), limitsize = FALSE) 
+ggsave(filename=args[2],currplot, width = 3 + .25*length(unique(countsmelt$variable)), limitsize = FALSE) 
     
