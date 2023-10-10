@@ -1,0 +1,10 @@
+fastq/VC_24h_1    fastq/SRR11431928.fastq
+fastq/VC_24h_2    fastq/SRR11431929.fastq
+fastq/VC_24h_3    fastq/SRR11431930.fastq
+fastq/VC_log_1    fastq/SRR11431931.fastq
+fastq/VC_log_2    fastq/SRR11431932.fastq
+fastq/VC_log_3    fastq/SRR11431933.fastq
+fastq/VC_log_4    fastq/SRR11431934.fastq
+fastq/VC_CF_1 fastq/SRR11431935.fastq
+fastq/VC_CF_2 fastq/SRR11431936.fastq
+fastq/VC_CF_3 fastq/SRR11431937.fastq
