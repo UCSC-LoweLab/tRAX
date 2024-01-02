@@ -24,13 +24,15 @@ tRAX requires to be run on a Linux/Unix system with at least 8 cores and 16 GB m
 * gridextra R library 2.3 or higher
 * reshape2 R library 1.4.4 or higher
 * Infernal 1.1 or higher
+* UMI-tools 1.1.2 or higher
 * The trackhub generation flag requires:
   * ucsc-bedgraphtobigwig v377
+  * ucsc-twobittofa v377
   * bedtools 2.29.2
 * The TestRun.bash script requires:
   * SRA toolkit(fastq-dump) 2.8.0
   * cutadapt 1.18
-  * seqprep 1.3.2
+  * SeqPrep 1.3.2
 
 
 ### Using Docker Image
