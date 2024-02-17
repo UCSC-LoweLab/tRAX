@@ -32,7 +32,7 @@ tRAX requires to be run on a Linux/Unix system with at least 8 cores and 16 GB m
 * The TestRun.bash script requires:
   * SRA toolkit(fastq-dump) 2.8.0
   * cutadapt 1.18
-  * SeqPrep 1.3.2
+  * seqprep 1.3.2
 
 
 ### Using Docker Image
