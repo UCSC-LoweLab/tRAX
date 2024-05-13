@@ -11,27 +11,27 @@ tRNA Analysis of eXpression (tRAX) is a software package built for in-depth anal
 tRAX requires to be run on a Linux/Unix system with at least 8 cores and 16 GB memory. Due to the large size of sequencing data, we do not recommend using tRAX on a regular desktop or laptop. The following dependencies have been tested, use newer versions at your own risk.
 
 #### Dependencies
-* Python 2.7
-* pysam 0.15.3
+* Python 3.10
+* pysam 0.20.0
   * Older versions have a memory leak, make sure you have an updated version
-* bowtie2 2.3.5
-* samtools 1.9
-* R 4.0.2 or higher
-* Deseq2 R library 1.30.0 or higher
+* bowtie2 2.5.1
+* samtools 1.16.1
+* R 4.2.1 or higher
+* Deseq2 R library 1.38.0 or higher
 * getopt R library 1.20.3 or higher
-* ggplot2 R library 3.3.0 or higher
-* ggrepel R library 0.8.2 or higher
+* ggplot2 R library 3.4.1 or higher
+* ggrepel R library 0.9.3 or higher
 * gridextra R library 2.3 or higher
 * reshape2 R library 1.4.4 or higher
-* Infernal 1.1 or higher
+* Infernal 1.1.4 or higher
 * UMI-tools 1.1.2 or higher
 * The trackhub generation flag requires:
   * ucsc-bedgraphtobigwig v377
   * ucsc-twobittofa v377
-  * bedtools 2.29.2
+  * bedtools 2.30.0
 * The TestRun.bash script requires:
-  * SRA toolkit(fastq-dump) 2.8.0
-  * cutadapt 1.18
+  * SRA toolkit(fastq-dump) 3.0.3
+  * cutadapt 4.2
   * seqprep 1.3.2
 
 
