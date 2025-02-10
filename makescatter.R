@@ -126,16 +126,16 @@ trnacounts$amino <- as.factor(trnacounts$amino)
 
 #aminoinfo <- read.table(paste(script.dir, "aminotable.txt", sep=''), stringsAsFactors = FALSE)
 
-aminos = c(" Glycine","Proline","Alanine","Valine","Leucine","Isoleucine","Methionine","Cysteine","Phenylalanine","Tyrosine","Tryptophan","Histidine","Lysine","Arginine","Glutamine","Asparagine","Glutamic_Acid","Aspartic_Acid","Serine","Threonine","iMethionine")
-threecodes = c("Gly","Pro","Ala","Val","Leu","Ile","Met","Cys","Phe","Tyr","Trp","His","Lys","Arg","Gln","Asn","Glu","Asp","Ser","Thr","iMet")
-onecodes = c("G","P","A","V","L","I","M","C","F","Y","W","H","K","R","Q","N","E","D","S","T","M")
+aminos = c(" Glycine","Proline","Alanine","Valine","Leucine","Isoleucine","Methionine","Cysteine","Phenylalanine","Tyrosine","Tryptophan","Histidine","Lysine","Arginine","Glutamine","Asparagine","Glutamic_Acid","Aspartic_Acid","Serine","Threonine","iMethionine","Selenocysteine")
+threecodes = c("Gly","Pro","Ala","Val","Leu","Ile","Met","Cys","Phe","Tyr","Trp","His","Lys","Arg","Gln","Asn","Glu","Asp","Ser","Thr","iMet", "SeC")
+onecodes = c("G","P","A","V","L","I","M","C","F","Y","W","H","K","R","Q","N","E","D","S","T","X", "Z")
 
 aminoinfo = data.frame(aminos,threecodes,onecodes, stringsAsFactors = FALSE)
 
 aminoletters <- aminoinfo[match(aminoinfo[,2], levels(trnacounts$amino)),3]
 aminoletters <- aminoinfo[match(levels(trnacounts$amino),aminoinfo[,2]),3]
 
-aminoletters[is.na(aminoletters)] <- "X"
+aminoletters[is.na(aminoletters)] <- "?"
 
 
 aminoletters <-  unlist(lapply(aminoletters, utf8ToInt))
@@ -245,8 +245,11 @@ extratypes = sort(extratypes)
 #print(gg_color_hue(length(extratypes)))
 extracolors = setNames(gg_color_hue(length(extratypes)), extratypes)
 typepal = c(typepal, extracolors)
+print("***")
 
-currplot <- ggplot(trnacounts, aes_string(x=xaxis, y=yaxis)) + geom_point(aes(color=type), size = 1) + 
+xaxisgg = enquo(xaxis)
+yaxisgg = enquo(yaxis)
+currplot <- ggplot(trnacounts, aes(x=!!ensym(xaxis), y=!!ensym(yaxis))) + geom_point(aes(color=type), size = 1) + 
     #scale_colour_manual(values = getPalette(colourCount)) + 
     scale_colour_manual(values = typepal)+
     geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+
@@ -260,14 +263,15 @@ currplot <- ggplot(trnacounts, aes_string(x=xaxis, y=yaxis)) + geom_point(aes(co
 
 
 #currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
-ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatter",outputformat,sep= ""), currplot)
-
-
+ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatter",outputformat,sep= ""), currplot, width = 8, height = 8)
+currplot = currplot + facet_wrap(~type, ncol = 3)
+ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatterfacet",outputformat,sep= ""), currplot, width = 14, height = length(unique(trnacounts$type)))
+print("***||")
 
 trnacounts$logfc = log2(trnacounts[,xaxis]) -  log2(trnacounts[,yaxis])
 #print(head(trnacounts))
 #print(max(abs(trnacounts$logfc)))
-currplot <- ggplot(trnacounts, aes_string(x="logfc", y="readsize")) + geom_point(aes(color=type), size = 1) + 
+currplot <- ggplot(trnacounts, aes(x=logfc, y=readsize)) + geom_point(aes(color=type), size = 1) + 
     #scale_colour_manual(values = getPalette(colourCount)) + 
     ggtitle(paste(xaxis, " vs ",yaxis, sep = "")) +
     scale_colour_manual(values = typepal)+
@@ -282,10 +286,10 @@ currplot <- ggplot(trnacounts, aes_string(x="logfc", y="readsize")) + geom_point
 
 
 #currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
-ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-lengthcompare",outputformat,sep= ""), currplot)
+#ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-lengthcompare",outputformat,sep= ""), currplot)
 
 trnacounts$mincounts = min(log2(trnacounts[,xaxis]),log2(trnacounts[,yaxis]))
-currplot <- ggplot(trnacounts, aes_string(x="logfc", y="mincounts")) + geom_point(aes(color=type), size = 1) + 
+currplot <- ggplot(trnacounts, aes(x=logfc, y=mincounts)) + geom_point(aes(color=type), size = 1) + 
     #scale_colour_manual(values = getPalette(colourCount)) + 
     ggtitle(paste(xaxis, " vs ",yaxis, sep = "")) +
     scale_colour_manual(values = typepal)+
@@ -300,17 +304,17 @@ currplot <- ggplot(trnacounts, aes_string(x="logfc", y="mincounts")) + geom_poin
 
 
 #currplot <- arrangeGrob(currplot, sub = textGrob(sublabel, x = 0, hjust = -0.1, vjust=0.1, gp = gpar(fontsize = 14)))
-ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-countcompare",outputformat,sep= ""), currplot)
+#ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-countcompare",outputformat,sep= ""), currplot)
 
 #+scale_shape_manual(values = c(20,15, 17,18,19)) theme(legend.position = "bottom")
-#currplot <- ggplot(trnacounts, aes_string(x=xaxis, y=yaxis))+geom_point(aes(color=amino, size = dotsize, shape=fragtype))+guides(size=FALSE, ncol = 1)+scale_size_continuous(range = c(.75,2))+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+#currplot <- ggplot(trnacounts, aes(x=!!ensym((xaxis), y=!!ensym((yaxis)))+geom_point(aes(color=amino, size = dotsize, shape=fragtype))+guides(size=FALSE, ncol = 1)+scale_size_continuous(range = c(.75,2))+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
 
 #scale_shape_manual(values = aminoletters)
 #scale_shape_manual(values=1:nlevels(trnacounts$amino))
 #print("***DONESCATTER")
 
 #print(head(trnacounts)) #PNK +geom_point(data = transform(trnacounts[trnacounts$fragtype == "nontRNA",], fragtype=NULL), aes(size = dotsize))
-currplot <- ggplot(trnacounts[trnacounts$fragtype != "nontRNA",], aes_string(x=xaxis, y=yaxis))+xlab(gsub("_", " ", xname))+ylab(gsub("_", " ", yname))+geom_point(aes(shape=amino, color=amino, size = dotsize))+guides(size=FALSE, ncol = 1)+scale_shape_manual(values=aminoletters) +facet_wrap( ~fragtype , ncol = 2) + scale_size_continuous(range = c(.25,4))+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim),breaks = trans_breaks('log2', function(x) 2^x, n = 10)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim),breaks= trans_breaks('log2', function(x) 2^x, n = 10)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(shape="Acceptor\nType", color="Acceptor\nType") 
+currplot <- ggplot(trnacounts[trnacounts$fragtype != "nontRNA",], aes(x=!!ensym(xaxis), y=!!ensym(yaxis)))+xlab(gsub("_", " ", xname))+ylab(gsub("_", " ", yname))+geom_point(aes(shape=amino, color=amino, size = dotsize))+guides(size=FALSE, ncol = 1)+scale_shape_manual(values=aminoletters) +facet_wrap( ~fragtype , ncol = 2) + scale_size_continuous(range = c(.25,4))+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim),breaks = trans_breaks('log2', function(x) 2^x, n = 10)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim),breaks= trans_breaks('log2', function(x) 2^x, n = 10)) + theme_bw() + theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + labs(shape="Acceptor\nType", color="Acceptor\nType") 
 ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-aminoscatter",outputformat,sep= ""), currplot, height = 10, width = 12)
 
 #currplot <- qplot(data=onlytrnas,x=onlytrnas[,xaxis],y=onlytrnas[,yaxis],xlab = xaxis,ylab = yaxis, asp=1)+geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = dashinterc, slope = 1,linetype = 2)+geom_abline(intercept = 0- dashinterc, slope = 1,linetype = 2)+scale_x_continuous(trans=log2_trans(),limits = c(1, maxlim)) + scale_y_continuous(trans=log2_trans(),limits = c(1, maxlim)) +facet_wrap( ~amino, , ncol = 2)

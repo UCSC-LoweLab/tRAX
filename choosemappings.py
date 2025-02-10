@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -119,7 +119,7 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
             for curr in currmap.tags:
                 tagdict[curr[0]] = curr[1]
             totalmaps += 1
-            if currmap.tid is -1:
+            if currmap.tid == -1:
                 continue
             #print >>sys.stderr, bamfile.getrname(currmap.tid)
             chromname = bamfile.getrname(currmap.tid)
@@ -266,17 +266,17 @@ def getbesttrnamappings(trnafile, bamout = True, logfile = sys.stderr, progname 
     if setcountfile is not None:
         setcounts = open(setcountfile, "w")
         for currset in trnasetcounts:
-            print ",".join(currset) +"\t"+str(trnasetcounts[currset])
+            print(",".join(currset) +"\t"+str(trnasetcounts[currset]))
     #print >>logfile, str(diffreads)+"/"+str(trnareads)
     
     
-    print >>logfile, "tRNA Reads with multiple transcripts:"+str(ambtrna)
-    print >>logfile, "tRNA Reads with multiple anticodons:"+str(ambanticodon)
-    print >>logfile, "tRNA Reads with multiple aminos:"+str(ambamino)
-    print >>logfile, "Total tRNA Reads:"+str(trnareads)
-    print >>logfile, "Single mapped non-tRNAs:"+str(uniquenontrnas)
-    print >>logfile, "Multiply mapped non-tRNAs:"+str(nonuniquenontrnas)
-    print >>logfile, "Imperfect matches:"+str(imperfect)+"/"+str(trnareads)
+    print("tRNA Reads with multiple transcripts:"+str(ambtrna), file=logfile)
+    print("tRNA Reads with multiple anticodons:"+str(ambanticodon), file=logfile)
+    print("tRNA Reads with multiple aminos:"+str(ambamino), file=logfile)
+    print("Total tRNA Reads:"+str(trnareads), file=logfile)
+    print("Single mapped non-tRNAs:"+str(uniquenontrnas), file=logfile)
+    print("Multiply mapped non-tRNAs:"+str(nonuniquenontrnas), file=logfile)
+    print("Imperfect matches:"+str(imperfect)+"/"+str(trnareads), file=logfile)
     #print >>logfile, "Extra Imperfect matches:"+str(extraimperfect)+"/"+str(trnareads)
     
     #print >>logfile, str(trnareads)+"/"+str(totalreads)

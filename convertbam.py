@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import pysam
 import sys
@@ -127,9 +127,9 @@ for currmap in bamfile:
                         newcigar.append(currcigar)
                 
                 if cigarlength(newcigar) != cigarlength(origcigar):        
-                    print >>sys.stderr, origcigar
-                    print >>sys.stderr, newcigar
-                    print >>sys.stderr, "**||||"
+                    print(origcigar, file=sys.stderr)
+                    print(newcigar, file=sys.stderr)
+                    print("**||||", file=sys.stderr)
                     #sys.exit(1)
                     pass
                 currmap.cigartuples = newcigar
@@ -169,10 +169,10 @@ for currmap in bamfile:
                         newcigar.append(currcigar)
                 if cigarlength(newcigar) != cigarlength(origcigar):        
                     #print >>sys.stderr, currmap
-                    print >>sys.stderr, "neg"
-                    print >>sys.stderr, origcigar
-                    print >>sys.stderr, newcigar
-                    print >>sys.stderr, "**||"
+                    print("neg", file=sys.stderr)
+                    print(origcigar, file=sys.stderr)
+                    print(newcigar, file=sys.stderr)
+                    print("**||", file=sys.stderr)
                     #sys.exit(1)
                     pass
                 currmap.cigartuples = newcigar

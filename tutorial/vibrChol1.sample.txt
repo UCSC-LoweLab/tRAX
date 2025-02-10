@@ -1,0 +1,10 @@
+VC_24h_1	VC_24h	fastq/VC_24h_1_trimmed.fastq.gz
+VC_24h_2	VC_24h	fastq/VC_24h_2_trimmed.fastq.gz
+VC_24h_3	VC_24h	fastq/VC_24h_3_trimmed.fastq.gz
+VC_log_1	VC_log	fastq/VC_log_1_trimmed.fastq.gz
+VC_log_2	VC_log	fastq/VC_log_2_trimmed.fastq.gz
+VC_log_3	VC_log	fastq/VC_log_3_trimmed.fastq.gz
+VC_log_4	VC_log	fastq/VC_log_4_trimmed.fastq.gz
+VC_CF_1	VC_CF	fastq/VC_CF_1_trimmed.fastq.gz
+VC_CF_2	VC_CF	fastq/VC_CF_2_trimmed.fastq.gz
+VC_CF_3	VC_CF	fastq/VC_CF_3_trimmed.fastq.gz

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import pysam
 import sys
@@ -144,7 +144,7 @@ class readcoverage:
 
 def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,geneseqs,sizefactor, mincoverage, outbed = None):
 
-    print >>mismatchreport, "\t".join(["Feature","Sample","position","coverage","readstarts","readends","readstotal","expreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"])
+    print("\t".join(["Feature","Sample","position","coverage","readstarts","readends","readstotal","expreadstotal","actualbase","mismatchedbases","deletedbases","adenines","thymines","cytosines","guanines","deletions"]), file=mismatchreport)
     #print >>sys.stderr,mismatchreport
     #print >>sys.stderr,"||***"
     samples = sampledata.getsamples()
@@ -180,7 +180,7 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
             maxpercent[currpos] = max((0+1.*mismatchpos[currsample][currpos])/(10+coveragepos[currsample][currpos]) for currsample in samples)
             #print >>sys.stderr, currfeat.name+":"+str(currpos)+":"+str(maxmismatch[currpos])+"/"+str(maxcov[currpos])+":"+str(maxpercent[currpos])
             if maxpercent[currpos] > mismatchthreshold:
-                print >>outbed, currfeat.getbase(currpos).bedstring(name = currfeat.name+"_"+str(currpos)+"pos", score = int(maxpercent[currpos] * 1000))
+                print(currfeat.getbase(currpos).bedstring(name = currfeat.name+"_"+str(currpos)+"pos", score = int(maxpercent[currpos] * 1000)), file=outbed)
         for currsample in samples:
             #readcounts = samplecoverages[currsample].readcounts
             
@@ -229,7 +229,7 @@ def transcriptcoverage(samplecoverages, mismatchreport, genelist,sampledata,gene
                     realbase = "-"
                 if realbase == "U":
                     realbase = "T"
-                print >>mismatchreport, "\t".join([currfeat.name,currsample,str(i),str(covcounts[i]),str(allstarts[i]),str(allends[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]/sizefactor[currsample]),str(totalreads),realbase,str(mismatches[i]),str(deletions[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
+                print("\t".join([currfeat.name,currsample,str(i),str(covcounts[i]),str(allstarts[i]),str(allends[i]),str(1.*samplecoverages[currsample].readcounts[currfeat.name]/sizefactor[currsample]),str(totalreads),realbase,str(mismatches[i]),str(deletions[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])]), file=mismatchreport)
     #sys.exit(1)  
     
 def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = None, minextend = None): 
@@ -266,8 +266,9 @@ def getsamplecoverage(currsample, sampledata, genelist,geneseqs,maxmismatches = 
         if not os.path.isfile(currbam+".bai"):
             pysam.index(""+currbam)
         bamfile = pysam.Samfile(""+currbam, "rb" )  
-    except IOError as ( strerror):
-        print >>sys.stderr, strerror
+    except IOError as xxx_todo_changeme:
+        ( strerror) = xxx_todo_changeme
+        print(strerror, file=sys.stderr)
         sys.exit()
         
     for i, currfeat in enumerate(genelist):
@@ -500,7 +501,9 @@ def main(**argdict):
     bamdir = argdict["bamdir"]
     sampledata = samplefile(argdict["samplefile"], bamdir = bamdir)
     samples = sampledata.getsamples()
-    genomefasta = argdict["genomefasta"]
+    genomefasta = os.path.expanduser(argdict["genomefasta"])
+    
+
     chroms = faitobed(genomefasta+".fai")
     ensemblgtf = argdict["ensemblgtf"]
     bedfiles = argdict["bedfile"]
@@ -509,7 +512,7 @@ def main(**argdict):
         bedfiles = list()
     coveragefile = argdict["covfile"]
     if coveragefile is None:
-        print >>sys.stderr, "no output file (--covfile)"
+        print("no output file (--covfile)", file=sys.stderr)
         sys.exit(1)
     embllist = list()
     
@@ -543,7 +546,7 @@ def main(**argdict):
         sizefactor = getsizefactors(argdict["sizefactors"]) 
         for currsample in sampledata.getsamples():
             if currsample not in sizefactor:
-                print >>sys.stderr, "Size factor file "+argdict["sizefactors"]+" missing "+currsample
+                print("Size factor file "+argdict["sizefactors"]+" missing "+currsample, file=sys.stderr)
                 sys.exit(1)
     combinereps = True
 

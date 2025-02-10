@@ -21,9 +21,8 @@ function docker_make() {
 
 # Function to start the container and build a RNA database
 function docker_build_db() {
-  if [ -z "$1" ]
-    then
-      echo "supply a databasename: ${GENOMES[@]}"
+  if [ -z "$1" ]; then
+    echo "supply a databasename: ${GENOMES[@]}"
   else
     docker volume create rnadb-${1}
     docker run --rm -it --name trax-build-rnadb-${1} \
@@ -36,20 +35,17 @@ function docker_build_db() {
 # Function to start a manual Docker TRAX container
 function docker_manual() {
   docker run --rm -it --name trax-${USER}-2 \
-  --user=`id -u`:`id -g` \
-  -v rnadb-${1}:/rnadb \
-  trax
+    --user=$(id -u):$(id -g) \
+    -v rnadb-${1}:/rnadb \
+    trax
 }
 
 # Init function
-if [[ ${1} = "make" ]]
-then
- docker_make
-elif [[ ${1} = "build" ]]
-then
+if [[ ${1} = "make" ]]; then
+  docker_make
+elif [[ ${1} = "build" ]]; then
   [[ ${GENOMES[*]} =~ ${2} ]] && docker_build_db ${@:2} || print_usage
-elif [[ ${1} = "manual" ]]
-then
+elif [[ ${1} = "manual" ]]; then
   [[ ${GENOMES[*]} =~ ${2} ]] && docker_manual ${@:2} || print_usage
 else
   print_usage

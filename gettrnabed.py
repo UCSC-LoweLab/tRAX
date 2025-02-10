@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import random
@@ -63,7 +63,7 @@ for currtrans in alltrnas:
     #trnanames[name] = currtrans
     trnalist.append(name)
     #print >>sys.stderr, name
-    print currtrans.loc.bedstring()
+    print(currtrans.loc.bedstring())
 
 #sys.exit()
 trnamods = dict()

@@ -71,7 +71,7 @@ getPalette = colorRampPalette(brewer.pal(9, "Set1"))
 
 
 
-print(head(countsmelt))
+#print(head(countsmelt))
 
 ggplot(countsmelt,aes(x = variable, y = value,fill = count, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
 	geom_bar(position = "fill",stat="identity") +

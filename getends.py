@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import pysam
 import sys
@@ -81,7 +81,7 @@ class readcoverage:
         return self.coverage
     def coveragealign(self, alignment, gapoutput = None,sizefactor = 1):
         if len(self.coverage) != len(string.translate(alignment, None, str(gapchars))):
-            print >>sys.stderr, "Alignment length does not match bed length"            
+            print("Alignment length does not match bed length", file=sys.stderr)            
         i = 0
         for curr in alignment:
             #print >>sys.stderr, curr
@@ -200,7 +200,7 @@ def main(**argdict):
     #gettnanums
     trnafasta = argdict["trnafasta"]
     trnaseqs = fastadict(trnafasta)
-    for currname in trnaseqs.keys():
+    for currname in list(trnaseqs.keys()):
         trnaseqs[currname] = ("N"*edgemargin)+trnaseqs[currname]+("N"*edgemargin)
     #print >>sys.stderr, trnaseqs['tRNA-Pro-CGG-2']
     positionnums = gettnanums(trnastk, margin = edgemargin)
@@ -210,7 +210,7 @@ def main(**argdict):
         for currfile in bedfile:
             basetrnas.extend(list(currbed for currbed in readbed(currfile)))       
     except IOError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         sys.exit()
     
     trnalist = list(curr.addmargin(edgemargin) for curr in basetrnas)
@@ -252,11 +252,11 @@ def main(**argdict):
         elif not any("NA"== curr for curr in operands):
             return sum(curr if curr != "NA" or curr is None else 0 for curr in operands)
         else:
-            print >>sys.stderr, "Trying to add incompatible alignments"
+            print("Trying to add incompatible alignments", file=sys.stderr)
             sys.exit(1)
         #return ",".join(str(curr) for curr in operands)
     def sumsamples(coverage,sampledata, repname, currfeat, sizefactors = defaultdict(lambda: 1)):
-        return (nasum(curr) for curr in itertools.izip(*(coverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]) for currsample in sampledata.getrepsamples(repname))))
+        return (nasum(curr) for curr in zip(*(coverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name],sizefactor = sizefactor[currsample]) for currsample in sampledata.getrepsamples(repname))))
     
         
     allcoverages = dict()
@@ -300,8 +300,9 @@ def main(**argdict):
             if not os.path.isfile(currbam+".bai"):
                 pysam.index(""+currbam)
             bamfile = pysam.Samfile(""+currbam, "rb" )  
-        except IOError as ( strerror):
-            print >>sys.stderr, strerror
+        except IOError as xxx_todo_changeme:
+            ( strerror) = xxx_todo_changeme
+            print(strerror, file=sys.stderr)
             sys.exit()
         #print >>sys.stderr, currsample
         for i, currfeat in enumerate(basetrnas):
@@ -425,12 +426,12 @@ def main(**argdict):
                     #print currfeat.name+":"+currpos+":"+str(modpos)+","+str(modpos)
                     pass
     #sys.exit(1) #6 mins
-    print >>mismatchreport, "tRNA_name\tsample\tposition\tpercentmismatch\tcoverage\tends\ttRNAreadstotal\tactualbase\tmismatchedbases\tadenines\tthymines\tcytosines\tguanines\tdeletions"
+    print("tRNA_name\tsample\tposition\tpercentmismatch\tcoverage\tends\ttRNAreadstotal\tactualbase\tmismatchedbases\tadenines\tthymines\tcytosines\tguanines\tdeletions", file=mismatchreport)
     mismatchfile = open(mismatchfilename, "w")
     indelfile = open(indelfilename, "w")
     #print >>allcoveragefile, "Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
-    print >>mismatchfile, "Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
-    print >>indelfile, "Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+    print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=mismatchfile)
+    print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=indelfile)
     for currfeat in trnalist:
         
         totalreads = sum(allcoverages[currsample][currfeat.name].totalreads for currsample in samples)
@@ -467,7 +468,7 @@ def main(**argdict):
                 #mismatchfraction = mismatchcounts[i]/(1.*covcounts[i]+10)
                 if True: #currcount > mismatchthreshold and allcovcount[i] > 20:
                     #print >>mismatchreport, currfeat.name+"\t"+currsample+"\t"+str(positionnums[i])+"\t"+str(currcount) 
-                    print >>mismatchreport, "\t".join([currfeat.name,currsample,str(positionnums[i]),str(currcount),str(allcovcount[i]),str(allstarts[i]),str(1.*readcounts[currsample][currfeat.name]),trnastk.aligns[currfeat.name][i],str(mismatches[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])])
+                    print("\t".join([currfeat.name,currsample,str(positionnums[i]),str(currcount),str(allcovcount[i]),str(allstarts[i]),str(1.*readcounts[currsample][currfeat.name]),trnastk.aligns[currfeat.name][i],str(mismatches[i]),str(adeninecount[i]),str(thyminecount[i]),str(cytosinecount[i]),str(guanosinecount[i]), str(readskipcount[i])]), file=mismatchreport)
     #sys.exit(1)        
 
 
@@ -512,8 +513,8 @@ def main(**argdict):
                 #covcounts  = list(str(curr)+"/"+str(1.*allcovcount[i] + 20.0) if curr is not None else 0 for i, curr in enumerate(readmismatches[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name])))
 
                 #covcounts = list(curr/(1.*readcounts[currsample][currfeat.name]) if curr is not None else "NA" for curr in readmismatches[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-                print >>mismatchfile, currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in covcounts)
-                print >>indelfile, currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in covcounts)
+                print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in covcounts), file=mismatchfile)
+                print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr) for curr in covcounts), file=indelfile)
                 
                 #print >>allcoveragefile, currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr/(1.*covcounts[i]+10)) if curr is not None else "NA" for i, curr in enumerate(allcoverages[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name])))
 
@@ -529,13 +530,13 @@ def main(**argdict):
         #print >>sys.stderr, covfiles.keys()
         #sys.exit(1)
         
-        for filename, currcoverage in covfiles.iteritems():
+        for filename, currcoverage in covfiles.items():
             #print >>sys.stderr, "file"
             #print >>sys.stderr, filename
             #sys.exit()
-            print >>sys.stderr, os.path.abspath(filename)
+            print(os.path.abspath(filename), file=sys.stderr)
             covfile = open(filename, "w")
-            print >>covfile,"Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums)
+            print("Feature"+"\t"+"Sample"+"\t"+"\t".join(positionnums), file=covfile)
                 
             for currfeat in trnalist:
                 totalreads = sum(allcoverages[currsample][currfeat.name].totalreads for currsample in samples)
@@ -547,11 +548,11 @@ def main(**argdict):
                     replicates = sampledata.allreplicates()
                     for currrep in replicates:
                         #print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr/(1.*readcounts[currrep][currfeat.name]))  if curr is not None else "NA" for curr in sumsamples(currcoverage,sampledata,currrep,currfeat))
-                        print  >>covfile,currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr/(1.*readcounts[currrep][currfeat.name]))  if curr is not None else "NA" for curr in sumsamples(currcoverage,sampledata,currrep,currfeat))
+                        print(currfeat.name+"\t"+currrep+"\t"+"\t".join(str(curr/(1.*readcounts[currrep][currfeat.name]))  if curr is not None else "NA" for curr in sumsamples(currcoverage,sampledata,currrep,currfeat)), file=covfile)
                 else:
                     for currsample in samples:
                         #print  >>covfile,currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr/(1.*readcounts[currsample][currfeat.name]))  if curr is not None else "NA" for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
-                        print  >>covfile,currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr/(1.*readcounts[currsample][currfeat.name]))  if curr is not None else "NA" for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name]))
+                        print(currfeat.name+"\t"+currsample+"\t"+"\t".join(str(curr/(1.*readcounts[currsample][currfeat.name]))  if curr is not None else "NA" for curr in currcoverage[currsample][currfeat.name].coveragealign(trnastk.aligns[currfeat.name])), file=covfile)
 
             covfile.close()
         

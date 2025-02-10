@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import pysam
 import sys
@@ -23,14 +23,14 @@ class prunedict:
         newdict = defaultdict(int) 
         trimmed = 0
         #currcutoff = max([trimcutoff, minreads])
-        for curr in self.counts.iterkeys():
+        for curr in self.counts.keys():
             if self.counts[curr] > self.trimcutoff:
                 newdict[curr] = self.counts[curr]
             else:
                 trimmed += 1
         self.trimmed += trimmed
         #print >>sys.stderr, str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff)
-        self.totalkeys = len(self.counts.keys())
+        self.totalkeys = len(list(self.counts.keys()))
         self.counts = newdict
         
     def __getitem__(self, key):
@@ -50,12 +50,12 @@ class prunedict:
     def checktrim(self):
         return self.totalkeys > self.maxkeys
     def iterkeys(self):
-        return self.counts.iterkeys()
+        return iter(self.counts.keys())
     def toseqnums(self):
         numdict = dict()
-        return {'seq'+str(i)+":"+str(self.counts[currseq]):currseq  for i, currseq in self.iterkeys()}
+        return {'seq'+str(i)+":"+str(self.counts[currseq]):currseq  for i, currseq in self.keys()}
     def resetmax(self, newmax):
-        if len(self.counts.values()) > newmax:
+        if len(list(self.counts.values())) > newmax:
             
             allcounts = sorted(self.counts.values())
             self.trimcutoff = allcounts[newmax]
@@ -79,7 +79,7 @@ class nameseq:
         if newmax is not None:
             self.counts[featname].resetmax(newmax)
         self.counts[featname].trim()
-        for curr in (set(self.names.iterkeys()) - set(itertools.chain.from_iterable(self.counts[currfeat].iterkeys() for currfeat in self.counts.iterkeys()))):
+        for curr in (set(self.names.keys()) - set(itertools.chain.from_iterable(iter(self.counts[currfeat].keys()) for currfeat in self.counts.keys()))):
             pass
             del self.names[curr]
         #print >>sys.stderr, str(len(self.counts.keys())) +"/"+ str(len(self.newdict.keys())) +":"+str(1.*len(self.counts.keys())/len(self.newdict.keys()))
@@ -87,14 +87,14 @@ class nameseq:
         if self.counts[featname].totalkeys > self.maxkeys:
             self.counts[featname].trimcutoff *= 1.1
     def setmax(self, newmax):
-        for featname in self.counts.iterkeys():
+        for featname in self.counts.keys():
             self.trim(featname, newmax  = newmax)
 
     def getseqnames(self):
         seqset = dict()
         seqnum = 0
-        for currfeat in self.counts.iterkeys():
-            for currseq in self.counts[currfeat].iterkeys():
+        for currfeat in self.counts.keys():
+            for currseq in self.counts[currfeat].keys():
                 if currseq not in seqset:
                     seqset[self.names[currseq]] = "frag"+str(seqnum+1)+":"+str(self.counts[currfeat][currseq])
                     seqnum += 1
@@ -102,8 +102,8 @@ class nameseq:
         #{list(self.names[seq])[0]:"frag"+str(i+1)+":"+str(self.counts[seq]) for i, curr in enumerate(self.counts.iterkeys())}
     def gettotal(self):
         count = 0
-        for featname in self.counts.iterkeys():
-            count += len(self.counts[featname].counts.keys())
+        for featname in self.counts.keys():
+            count += len(list(self.counts[featname].counts.keys()))
         return count
     
 
@@ -136,7 +136,7 @@ def main(**argdict):
             trnalist.extend(list(readbed(currfile)))
 
     except IOError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         sys.exit()
     nomultimap = False
     maxmismatches = None
@@ -146,18 +146,19 @@ def main(**argdict):
     for currsample in samples:
         
         currbam = sampledata.getbam(currsample)
-        print >>sys.stderr, currsample
+        print(currsample, file=sys.stderr)
         #doing this thing here why I only index the bamfile if the if the index file isn't there or is older than the map file
         try:
             if not os.path.isfile(currbam+".bai") or os.path.getmtime(currbam+".bai") < os.path.getmtime(currbam):
                 pysam.index(""+currbam)
             bamfile = pysam.Samfile(""+currbam, "rb" )  
-        except IOError as ( strerror):
-            print >>sys.stderr, strerror
+        except IOError as xxx_todo_changeme:
+            ( strerror) = xxx_todo_changeme
+            print(strerror, file=sys.stderr)
             sys.exit(1)
         except pysam.utils.SamtoolsError:
-            print >>sys.stderr, "Can not index "+currbam
-            print >>sys.stderr, "Exiting..."
+            print("Can not index "+currbam, file=sys.stderr)
+            print("Exiting...", file=sys.stderr)
             sys.exit(1)
                 
         for currfeat in trnaloci:
@@ -182,9 +183,9 @@ def main(**argdict):
                 trnaseqcounts.addread(currfeat.name, currread.name , currread.data["seq"])
                 pass
         break
-    print >>sys.stderr, "Got sequences"
+    print("Got sequences", file=sys.stderr)
     trnaseqcounts.setmax(20)
-    print >>sys.stderr, "Total: "+str(trnaseqcounts.gettotal())
+    print("Total: "+str(trnaseqcounts.gettotal()), file=sys.stderr)
     seqnames = trnaseqcounts.getseqnames()
     headbamfile =   pysam.Samfile(""+sampledata.getbam(samples[0]), "rb" )
     headerout = False
@@ -198,12 +199,13 @@ def main(**argdict):
             if not os.path.isfile(currbam+".bai") or os.path.getmtime(currbam+".bai") < os.path.getmtime(currbam):
                 pysam.index(""+currbam)
             bamfile = pysam.Samfile(""+currbam, "rb" )
-        except IOError as ( strerror):
-            print >>sys.stderr, strerror
+        except IOError as xxx_todo_changeme1:
+            ( strerror) = xxx_todo_changeme1
+            print(strerror, file=sys.stderr)
             sys.exit(1)
         except pysam.utils.SamtoolsError:
-            print >>sys.stderr, "Can not index "+currbam
-            print >>sys.stderr, "Exiting..."
+            print("Can not index "+currbam, file=sys.stderr)
+            print("Exiting...", file=sys.stderr)
             sys.exit(1)
         #indexing takes longer than just stepping through the files            
         #nameindex = pysam.IndexedReads(bamfile)

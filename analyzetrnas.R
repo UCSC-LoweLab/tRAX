@@ -14,7 +14,16 @@ reverselog_trans <- function(base = exp(1)) {
               log_breaks(base = base), 
               domain = c(1e-100, Inf))
 }
+roundDownsig <- function(x) 5*((10)^floor(log10(x)))
 
+reverselog_breaks <- function(minprob) {
+minprobadj = min(c(minprob, .001))
+minfloor = roundDownsig(minprobadj)
+minlog = log10(minfloor)
+
+
+return (10^(seq(minlog,1)))
+}
 
 colgetlogname =  function(currtable, newname){
 
@@ -25,7 +34,7 @@ return(newtable)
 
 colgetavgname =  function(currtable, newname){
 
-newtable = currtable[,c(1),drop = FALSE]
+newtable = currtable[,c(2),drop = FALSE]
 colnames(newtable)[1] <- newname
 return(newtable)
 }
@@ -41,8 +50,14 @@ return(newtable)
 args = commandArgs(trailingOnly = TRUE)
 
 experimentname = args[1]
-inputtable = args[2]
-samplefile = args[3]
+directory = args[2]
+
+typename = args[3]
+inputtable = args[4]
+samplefile = args[5]
+
+
+#matrix(unlist(test_mat),ncol=3,byrow=T)
 
 
 readcounts = read.table(inputtable,check.names=FALSE)
@@ -54,26 +69,19 @@ sampledata = read.table(samplefile,check.names=FALSE)
 #sampleinfo = as.character(sampledata[colnames(readcounts) == sampledata[,1],2])
 
 
+#readcounts = readcounts[(grepl( "tRNA", as.character(rownames(readcounts)), fixed = TRUE) | grepl( "tRX", as.character(rownames(readcounts)), fixed = TRUE)) & ( grepl( "fiveprime", as.character(rownames(readcounts))) | grepl( "threeprime", as.character(rownames(readcounts))) | grepl( "other", as.character(rownames(readcounts))) | grepl( "wholecounts", as.character(rownames(readcounts)))) ,]
 
 
 sampleinfo = as.character(sampledata[colnames(readcounts) == gsub("-", ".", sampledata[,1]) ,2])
 
 
 
-#gsub("-", ".", sampledata[,1]) 
-#sampledata[,2]
-#colnames(readcounts)
-#sampledata[,1]
-
 samplenames = unique(sampleinfo)
-#combn(unique(sampleinfo),2,simplify = FALSE)
-#read.table(args[4], stringsAsFactors = FALSE)
-#length(args)
-#args[4]
 
-if (length(args) > 3){
 
-pairtable = read.table(args[4], stringsAsFactors = FALSE)
+if (length(args) > 5){
+
+pairtable = read.table(args[6], stringsAsFactors = FALSE)
 pairreduce = pairtable[pairtable[,1] %in% samplenames & pairtable[,2] %in% samplenames,]
 
 #print(pairtable)
@@ -90,11 +98,19 @@ coldata = data.frame(condition=factor(sampleinfo))
 
 
 cds = DESeqDataSetFromMatrix(countData = readcounts,coldata  ,design = ~ condition)
+if (length(args) > 6){
+sizefactortable = read.table(args[7], stringsAsFactors = FALSE, header = TRUE)
+sizefactorvec = unlist(as.vector(sizefactortable[1,]))
+#print(sizefactorvec)
+#q()
+sizeFactors(cds) <- sizefactorvec
+}else{
 cds = estimateSizeFactors(cds)
+}
 normalizedrnas = sweep(readcounts,2,cds$sizeFactor, "/" )
-write.table(normalizedrnas,paste(experimentname,"/",experimentname,"-normalizedreadcounts.txt", sep = ""), sep = "\t")
+write.table(normalizedrnas,paste(directory,"/",experimentname,"-",typename,"_normalizedreadcounts.txt", sep = ""), sep = "\t")
 #print(sizefactors)
-write.table(rbind(colnames(readcounts),cds$sizeFactor),file=paste(experimentname,"/",experimentname,"-SizeFactors.txt", sep = ""), row.names=FALSE,col.names=FALSE)
+write.table(rbind(colnames(readcounts),cds$sizeFactor),file=paste(directory,"/",experimentname,"-",typename,"_SizeFactors.txt", sep = ""), row.names=FALSE,col.names=FALSE)
 
 
 
@@ -114,14 +130,14 @@ if(heatmaps){
 
 #Can fail sometimes
 deseq2VST <- vst(deseq2Data,fitType = "local")
-write.table(as.data.frame(assay(deseq2VST)),paste(experimentname,"/",experimentname,"-vst.txt", sep = ""), col.names=NA )
+write.table(as.data.frame(assay(deseq2VST)),paste(directory,"/",experimentname,"-",typename,"_vst.txt", sep = ""), col.names=NA )
 
 deseq2rlog <- rlog(deseq2Data)  
-write.table(as.data.frame(assay(deseq2rlog)),paste(experimentname,"/",experimentname,"-rlog.txt", sep = ""), col.names=NA )
+write.table(as.data.frame(assay(deseq2rlog)),paste(directory,"/",experimentname,"-",typename,"_rlog.txt", sep = ""), col.names=NA )
 
 
 zscores = as.data.frame(t(scale(t(normalizedrnas))))
-write.table(zscores,paste(experimentname,"/",experimentname,"-zscore.txt", sep = ""), col.names=NA )
+write.table(zscores,paste(directory,"/",experimentname,"-",typename,"_zscore.txt", sep = ""), col.names=NA )
 
 
 
@@ -135,17 +151,15 @@ reslist = lapply(compareresults, function(currresult){colrename(currresult[[2]],
 
 resloglist = lapply(compareresults, function(currresult){colgetlogname(currresult[[2]],currresult[[1]])})
 
-resavglist = lapply(compareresults, function(currresult){colgetavgname(currresult[[2]],currresult[[1]])})                                
+resavglist = lapply(compareresults, function(currresult){colgetlogname(currresult[[2]],currresult[[1]])})                                
 
-#print(compareresults[[2]])
-#q()
 
 #print(compareresults)
 #print(length(dispersions(cds)))
 #print(nrow(readcounts))
 
 #print(cds)
-write.table(cbind(rownames(readcounts),dispersions(cds)),file=paste(experimentname,"/",experimentname,"-dispersions.txt", sep = ""), quote=FALSE,row.names=FALSE,col.names=FALSE)
+write.table(cbind(rownames(readcounts),dispersions(cds)),file=paste(directory,"/",experimentname,"-",typename,"_dispersions.txt", sep = ""), quote=FALSE,row.names=FALSE,col.names=FALSE)
 
 
 
@@ -159,16 +173,14 @@ allprobs = Reduce(function(x,y) cbind(x,y), reslist)
 #print("***||*")
 #print(reslist)
 
-write.table(allprobs,paste(experimentname,"/",experimentname,"-padjs.txt", sep = ""),sep="	")
+write.table(allprobs,paste(directory,"/",experimentname,"-",typename,"_padjs.txt", sep = ""),sep="	")
 #stop("Message")                                                              
 #Print log values
 
 
 alllogvals = Reduce(function(x,y) cbind(x,y), resloglist)
-write.table(alllogvals,paste(experimentname,"/",experimentname,"-logvals.txt", sep = ""),sep="	")
+write.table(alllogvals,paste(directory,"/",experimentname,"-",typename,"_logvals.txt", sep = ""),sep="	")
 
-allavgvals = Reduce(function(x,y) cbind(x,y), resavglist)
-write.table(allavgvals,paste(experimentname,"/",experimentname,"-avgs.txt", sep = ""),sep="	")
 
 
 
@@ -185,12 +197,11 @@ currpair = paste(currcomp[1], currcomp[2], sep ="_")
 
 currlogval = alllogvals[,c(currpair)]
 currprob = allprobs[,c(currpair)]
-curravg = allavgvals[,c(currpair)]
 genename = rownames(allprobs)
 
 #pairname = sub( ".", "_",currpair,fixed=TRUE)
 pairname = sub( ":", "_",currpair,fixed=TRUE)
-currsampledata = data.frame(genename, currlogval, currprob,curravg )
+currsampledata = data.frame(genename, currlogval, currprob)
 
 #print(head(allprobs))
 #print("$$**")
@@ -248,7 +259,7 @@ maxscore = max(abs(deseq2trans$value))
 heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "log-fold change from median") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
 #print(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))
 #print(1*length(unique(deseq2trans$Gene)))
-ggsave(paste(experimentname,"/",pairname,"-deseqlogheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
+ggsave(paste(directory,"/",experimentname,"-",pairname,"-deseqlogheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
 
 
 deseq2trans = zscores
@@ -285,16 +296,10 @@ maxscore = max(abs(deseq2trans$value))
 heatmap <- ggplot(deseq2trans, aes(x=variable, y=Gene, fill=value)) + geom_raster() +  theme_bw() +  scale_fill_gradient2(high="darkred",low="darkblue", limits = c(-maxscore, maxscore))  + ggtitle(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))+theme(axis.text.x=element_text(angle=65, hjust=1),  axis.ticks.y=element_blank()) + labs(fill = "Z score") #axis.text.y=element_blank(),  scale_fill_viridis(discrete=FALSE) scale_fill_distiller(palette = "RdBu")
 print(paste(currcomp[[1]], currcomp[[2]], sep = " vs "))
 print(1*length(unique(deseq2trans$Gene)))
-ggsave(paste(experimentname,"/",pairname,"-deseqzscoreheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
+ggsave(paste(directory,"/",experimentname,"-",pairname,"-deseqzscoreheatmap",".pdf",sep= ""),height=4+ .2*length(unique(deseq2trans$Gene)), limitsize=FALSE, heatmap )
 
 
 }
-
-paircols <- as.character(sampledata[sampledata[,2] == currcomp[[1]] | sampledata[,2] == currcomp[[2]],1])
-
-print(paircols)
-currsampledata$pairmeans <- apply(normalizedrnas[,paircols], 1, mean)
-
 
 
 
@@ -306,37 +311,44 @@ pvalcutoff = sort(currsampledata$currprob)[10]
 
 displayfeats = ifelse(abs(currsampledata$currlogval) > 1.5 & currsampledata$currprob < pvalcutoff, as.character(currsampledata$genename), "")
 
-currsampledata$siggenes = ifelse(!is.na(currsampledata$currprob) & currsampledata$currprob < .05, "Significant", "Not Significant")
-currplot <- ggplot(currsampledata, aes(x=currlogval, y=currprob)) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+#print("**") 
+#print(rownames(currsampledata))
+#print(head(displayfeats))
 
 
-ggsave(paste(experimentname,"/",pairname ,"-volcano",outputformat,sep= ""), currplot) 
+#currsampledata = cbind(currlogval,currprob) # 
+#print(head(currsampledata))
+#currsampledata = currsampledata[currsampledata$currprob > .005,]
+#print(head(currsampledata))
+#print(currcomp[[1]])
+#print(currcomp[[2]])
+#currplot <- ggplot(currsampledata, aes_string(x="currlogval", y="currprob")) + geom_point() +scale_x_continuous() +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
 
-
-#genecond = rep(c("NS"),times=nrow(currsampledata))
-upregname = paste("Up in ",currcomp[[1]])
-downregname = paste("Up in ",currcomp[[2]])
-
-genecond =  ifelse(!is.na(currsampledata$currprob) & currsampledata$currlogval > 1.5 & currsampledata$currprob < .05, upregname, ifelse(!is.na(currsampledata$currprob) & currsampledata$currlogval < -1.5 & currsampledata$currprob < .05, downregname, "NS")) #
-#genecond =   
-#print(genecond)
-
-genecond = factor(genecond, levels = c(upregname,downregname,"NS"))
-
-currplot <- ggplot(currsampledata, aes(x=pairmeans, y=currlogval, color = genecond)) + geom_point(size = 1) + scale_colour_discrete(drop=TRUE,limits = levels(genecond), type = c("red","blue","black")) +scale_x_continuous(trans='log2') +geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+geom_hline(yintercept = dashinterc, linetype = 2) + geom_hline(yintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Normalized Mean")+ylab("Log2-Fold Change")+ggtitle(currpair)+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) #+ labs(caption = c(currcomp[[1]], currcomp[[2]])) + theme(plot.caption = element_text(size = 16,vjust=c(1, 0), hjust=c(0, 0))) 
-ggsave(paste(experimentname,"/",pairname ,"-maplot",outputformat,sep= ""), currplot) 
-
-
-trnasampledata = currsampledata[(grepl( "tRNA", as.character(currsampledata$genename), fixed = TRUE) | grepl( "tRX", as.character(currsampledata$genename), fixed = TRUE)) & ( grepl( "fiveprime", as.character(currsampledata$genename)) | grepl( "threeprime", as.character(currsampledata$genename)) | grepl( "other", as.character(currsampledata$genename)) | grepl( "wholecounts", as.character(currsampledata$genename))) ,]
+trnasampledata = currsampledata
 
 #print(trnasampledata)
 trnapvalcutoff = sort(trnasampledata$currprob)[10]
 
 trnadisplayfeats = ifelse(abs(trnasampledata$currlogval) > 1.5 & trnasampledata$currprob < trnapvalcutoff, as.character(trnasampledata$genename), "")
 
+mintrnaprob = min(trnasampledata$currprob, na.rm = TRUE)
 
-currplot <- ggplot(trnasampledata, aes(x=currlogval, y=currprob)) + geom_point() +scale_x_continuous() +  geom_text_repel(label = trnadisplayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ scale_y_continuous(trans=reverselog_trans(10))+geom_hline(yintercept = .05, linetype = 2)+geom_hline(yintercept = .005, linetype = 2)+geom_vline(xintercept = dashinterc, linetype = 2) + geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,"_tRNAs",sep = ""))+theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  labs(caption = c(currcomp[[1]], currcomp[[2]])) +  theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
-ggsave(paste(experimentname,"/",pairname ,"-volcano_tRNA",outputformat,sep= ""), currplot) 
+currplot <- ggplot(trnasampledata, aes(x=currlogval, y=currprob)) + geom_point() +
+    scale_x_continuous() +  geom_text_repel(label = displayfeats,min.segment.length = unit(0, 'lines'), segment.color="red")+ 
+    scale_y_continuous(trans=reverselog_trans(10), breaks = reverselog_breaks(mintrnaprob), labels = scientific)+
+    geom_hline(yintercept = .05, linetype = 2)+
+    geom_hline(yintercept = .005, linetype = 2)+
+    geom_vline(xintercept = dashinterc, linetype = 2) + 
+    geom_vline(xintercept = -dashinterc, linetype = 2)+theme_bw() + 
+    xlab("Log2-Fold Change")+ylab("Adjusted P-value")+ggtitle(paste(currpair,typename,sep = ""))+
+    theme(legend.box="horizontal",aspect.ratio=1,axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))+  
+    labs(caption = c(currcomp[[1]], currcomp[[2]])) +  
+    theme(plot.caption = element_text(size = 16,hjust=c(1, 0))) 
+
+
+                                                           
+ggsave(paste(directory,"/",experimentname,"_",typename,"-",pairname ,"-volcano",outputformat,sep= ""), currplot) 
+
 
 }
 }
@@ -353,31 +365,12 @@ colnames(alllogvals) <- paste("log2", colnames(alllogvals), sep = "_")
 #print("***||")
 
 colnames(allprobs) <- paste("pval", colnames(allprobs), sep = "_")
-colnames(allavgvals) <- paste("mean", colnames(allavgvals), sep = "_")
-
 allcombinevals = cbind(alllogvals,allprobs)
 
-write.table(allcombinevals,paste(experimentname,"/",experimentname,"-combine.txt", sep = ""),sep="	", col.names=NA,quote=FALSE) 
 
 sortcombinevals = allcombinevals[order(apply(alllogvals,1,max)),]
 
-#apply(allprobs,1,min) < .05 
 
-#write.table(sortcombinevals,paste(experimentname,"/",experimentname,"-combinesort.txt", sep = ""),sep="	", col.names=NA,quote=FALSE) 
-
-#stop("Message")
-#Print out the size factors
-#write.table(rbind(colnames(readcounts),dds$sizeFactor),file=paste(experimentname,"/",experimentname,"-SizeFactors.txt", sep = ""), row.names=FALSE,col.names=FALSE)
-#stop("Message")
-#get deseq normalized  raw counts
-
-#
-
-#allcombined = cbind(allcombinevals,normalizedrnas)
-#write.table(allcombined,paste(experimentname,"/",experimentname,"-combineall.txt", sep = ""),sep="	", col.names=NA,quote=FALSE)
-
-
-#write.table(allcombined[apply(normalizedrnas,1,max) > 30 & apply(alllogvals,1,min) < .05 ,],paste(experimentname,"/",experimentname,"-relevnormalized.txt", sep = ""), col.names=NA )
 
 medcounts = list()
 
@@ -405,7 +398,7 @@ medcountmat <- do.call("cbind",medcounts)
 colnames(medcountmat) <- names(medcounts)
 
 
-write.table(medcountmat,paste(experimentname,"/",experimentname,"-medians.txt", sep = ""),quote=FALSE)
+write.table(medcountmat,paste(directory,"/",experimentname,"-",typename,"_medians.txt", sep = ""),quote=FALSE)
 
 
 #print(head(medcountmat))
@@ -421,6 +414,5 @@ allcombinevals = as.matrix(allcombinevals)
 #typeof(normalizedrnas)
 allcombinevals = cbind(allcombinevals,medcountmat)
 
-#write.table(allcombinevals[apply(readcounts,1,max) > 30 & apply(alllogvals,1,min) < .05 ,],paste(experimentname,"/",experimentname,"-relevnormalizedsamples.txt", sep = ""), col.names=NA )
 
-write.table(allcombinevals,paste(experimentname,"/",experimentname,"-combine.txt", sep = ""), col.names=NA )
+write.table(allcombinevals,paste(directory,"/",experimentname,"-",typename,"_combine.txt", sep = ""), col.names=NA )

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import sys
@@ -17,7 +17,7 @@ def readmultifastq(fqfile, fullname = False):
     if fqfile == "stdin":
         fqfile = sys.stdin
     elif fqfile.endswith(".gz"):
-        fqfile = gzip.open(fqfile, "rb")
+        fqfile = gzip.open(fqfile, "rt")
     else:
         fqfile = open(fqfile, "r")
     currloc = 0
@@ -51,24 +51,26 @@ def readmultifastq(fqfile, fullname = False):
             sequence += line
             
 class prunedict:
-    def __init__(self, maxkeys = 10000000):
+    def __init__(self, maxkeys = 1000000):
         self.counts = defaultdict(int) 
         self.maxkeys = maxkeys 
         self.trimcutoff = max([10,self.maxkeys/100000])
         self.totalkeys = 0
         self.trimmed = 0
-    def trim(self):
+    def trim(self, trimcutoff = None):
         #print >>sys.stderr, "**"
         newdict = defaultdict(int) 
         trimmed = 0
-        for curr in self.counts.iterkeys():
-            if self.counts[curr] > self.trimcutoff:
+        if trimcutoff is None:
+            trimcutoff = self.trimcutoff
+        for curr in self.counts.keys():
+            if self.counts[curr] > trimcutoff:
                 newdict[curr] = self.counts[curr]
             else:
                 trimmed += 1
         self.trimmed += trimmed
-        #print >>sys.stderr, str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff)
-        self.totalkeys = len(self.counts.keys())
+        #print (str(trimmed)+"/"+str(self.totalkeys)+" at "+str(self.trimcutoff), file = sys.stderr)
+        self.totalkeys = len(list(self.counts.keys()))
         self.counts = newdict
         
     def __getitem__(self, key):
@@ -80,13 +82,13 @@ class prunedict:
             self.totalkeys += 1
         self.counts[key] = count
         if self.totalkeys > self.maxkeys:
-            #self.trim()
+            self.trim()
 
             #print >>sys.stderr, str(len(self.counts.keys())) +"/"+ str(len(self.newdict.keys())) +":"+str(1.*len(self.counts.keys())/len(self.newdict.keys()))
             if self.totalkeys > self.maxkeys:
                 self.trimcutoff *= 1.1
-    def iterkeys(self):
-        return self.counts.keys()
+    def keys(self):
+        return list(self.counts.keys())
             
 
 sampledata = samplefile(sys.argv[1])
@@ -106,7 +108,7 @@ for currsample in samples:
             #print >>sys.stderr, str(total)
     if not allmode:  
         pass
-        #seqcount[currsample].trim()
+        #seqcount[currsample].trim(trimcutoff = 1000)
 
 seqfile = open(sys.argv[2], "w")
 
@@ -114,13 +116,13 @@ allseqs = defaultdict(int)
 totalreads = defaultdict(int)
 
 for currsample in samples:
-    for currseq in seqcount[currsample].iterkeys():
+    for currseq in seqcount[currsample].keys():
         allseqs[currseq] += 1
         totalreads[currseq] += seqcount[currsample][currseq]
 
 maxmissing = 0
-print "\t".join(samples)    
-for i, currseq in enumerate(allseqs.iterkeys()):
+print("\t".join(samples))    
+for i, currseq in enumerate(allseqs.keys()):
     
     if not allmode and (allseqs[currseq] < 2 or totalreads[currseq] < 40):   #allseqs[currseq] < len(samples)
         
@@ -129,8 +131,8 @@ for i, currseq in enumerate(allseqs.iterkeys()):
             maxmissing = currmax
         continue
     seqname = "frag"+str(i+1)+"_"+str(len(currseq))
-    print seqname+"\t"+ "\t".join(str(seqcount[currsample][currseq]) for currsample in samples)
+    print(seqname+"\t"+ "\t".join(str(seqcount[currsample][currseq]) for currsample in samples))
 
-    print >>seqfile, ">"+ seqname
-    print >>seqfile, currseq
+    print(">"+ seqname, file=seqfile)
+    print(currseq, file=seqfile)
     

@@ -2,6 +2,8 @@
 library(ggplot2)
 library(reshape2)
 library(scales)
+library(ggrepel)
+
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -36,6 +38,14 @@ scores = as.data.frame(datapca$x)
 
 samplename = sampledata[match(rownames(scores),sampledata[,1]),2]
 
-ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(scores), color = samplename)) + theme_bw()+labs(color="Sample Name")+ geom_point()+geom_hline(yintercept = 0, colour = "gray65") +geom_vline(xintercept = 0, colour = "gray65") + geom_text(alpha = 0.8, size = 2,vjust="inward",hjust="inward") + ggtitle("Principle Component Analysis")    + xlab(percentlabels[1]) +    ylab(percentlabels[2]) 
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(scores), color = samplename)) + 
+    theme_bw()+
+    labs(color="Sample Name")+ geom_point()+
+    geom_hline(yintercept = 0, colour = "gray65") + 
+    geom_vline(xintercept = 0, colour = "gray65") +
+    geom_text_repel(alpha = 0.8, size = 2,vjust="inward",hjust="inward", segment.color="red") +
+    #geom_text(alpha = 0.8, size = 2,vjust="inward",hjust="inward") + 
+    ggtitle("Principle Component Analysis")    + xlab(percentlabels[1]) +    
+    ylab(percentlabels[2]) 
 ggsave(filename=args[3])
 

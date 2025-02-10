@@ -49,7 +49,7 @@ countsmelt = countsmelt[countsmelt$value > sampletotals$x[countsmelt$variable] /
 }
 #countsmelt = countsmelt
 #countsmelt
-ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
+currplot = ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + theme_bw() + theme(panel.border = element_rect(linetype = "blank"), panel.grid = element_line(linetype = "blank")) + 
 	geom_bar(stat="identity") + 
     geom_bar(stat="identity",color="black",show.legend=FALSE) + 
     theme(axis.text.x = element_text(size=5))+
@@ -58,5 +58,5 @@ ggplot(countsmelt,aes(x = variable, y = value,fill = seq, stat="identity")) + th
     labs(fill="Read\nType") + 
     theme(axis.title.x = element_text(face="bold", size=15), axis.text.x = element_text(face="bold", size=9,angle = 90, vjust = .5))
 
-ggsave(filename=args[2])
+ggsave(filename=args[2],currplot, width = 3 + .25*length(unique(countsmelt$variable)), limitsize = FALSE) 
     

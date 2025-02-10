@@ -1,5 +1,5 @@
 
-library(ggsci)
+#library(ggsci)
 library(ggplot2)
 library(reshape2)
 library(scales)
@@ -7,11 +7,8 @@ library(RColorBrewer)
 
 args <- commandArgs(trailingOnly = TRUE)
 
-#args <- c("hg19-genomictrailertable.txt","hg19-genomicbarplot.png")
-#args =c("repfragtypenormcounts.txt","barplot.png")
 
 
-#Rscript trailerbarplot.R hg19-trailertable.txt hg19-barplot.png
 counts <- read.table(args[1],check.names=FALSE)
 
 selectcounts = counts
@@ -19,7 +16,6 @@ selectcounts = counts
 
 temp = cbind(selectcounts, seq = factor(rownames(selectcounts),rev(rownames(selectcounts)), ordered = TRUE))
 
-#levels(temp$seq) <- rev(rownames(selectcounts))
 
 countsmelt = melt(temp, id.vars = c('seq'))
 
@@ -28,10 +24,8 @@ countsmelt = within(countsmelt, seq <- factor(seq,
     rownames(selectcounts), 
     ordered = FALSE))
 
-#head(countsmelt)
 sampletotals = aggregate(countsmelt$value, list(countsmelt$variable), sum)
 
-#countsmelt
 
 
 #sampletotals$x[countsmelt$variable]

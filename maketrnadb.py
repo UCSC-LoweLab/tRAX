@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import argparse
@@ -18,8 +18,8 @@ from multiprocessing import Pool, cpu_count
 def get_location(program, allowfail = False):
     progloc = find_executable(program)
     if find_executable(program) is None and not allowfail:
-        print >>sys.stderr, "Could not find "+program+" in path"
-        print >>sys.stderr, "Aborting"
+        print("Could not find "+program+" in path", file=sys.stderr)
+        print("Aborting", file=sys.stderr)
         sys.exit(1)
     else:
         return progloc
@@ -109,15 +109,15 @@ parser.add_argument('--forcecca', action="store_true", default=False,
                    help='force the addition of a CCA tail')
 
 def shellcall(shellcommand,failquit = False):
-    retcode = subprocess.call(shellcommand, shell=True)
+    retcode = subprocess.call(shellcommand, shell=True,universal_newlines=True )
     if retcode > 0 and failquit:
-        print >>sys.stderr, "Command failed:"
-        print >>sys.stderr, shellcall
-        print >>sys.stderr, "quiting program..."
+        print("Command failed:", file=sys.stderr)
+        print(shellcall, file=sys.stderr)
+        print("quiting program...", file=sys.stderr)
         sys.exit(1)
     elif retcode > 0:
-        print >>sys.stderr, "Command failed:"
-        print >>sys.stderr, shellcall
+        print("Command failed:", file=sys.stderr)
+        print(shellcall, file=sys.stderr)
     return retcode
         
         
@@ -130,7 +130,7 @@ namemapfile = args.namemapfile
 addtrna = args.addtrnas
 forcecca = args.forcecca
 if namemapfile is None:
-    print >>sys.stderr, "Name map file currently needed for tRNA database creation"
+    print("Name map file currently needed for tRNA database creation", file=sys.stderr)
     sys.exit(1)
 orgmode = args.orgmode
 addseqs = args.addseqs
@@ -189,6 +189,7 @@ if forcecca:
 
 transcriptstk = dbdirectory+dbname+"-trnaalign.stk"
 locusstk = dbdirectory+dbname+"-trnaloci.stk"
+
 getmaturetrnas.main(trnascan=[scanfile], genome=genomefile,gtrnafa=gtrnafafile,addtrna = addtrna, namemap=namemapfile, bedfile=dbdirectory+dbname+"-maturetRNAs.bed",maturetrnatable=dbdirectory+dbname+"-trnatable.txt",trnaalignment=transcriptstk,locibed=dbdirectory+dbname+"-trnaloci.bed",maturetrnafa=dbdirectory+dbname+"-maturetRNAs.fa",cmmodel = maturemodel, prokmode = prokmode)
 aligntrnalocus.main(genomefile=genomefile,stkfile=locusstk,trnaloci=dbdirectory+dbname+"-trnaloci.bed", cmmodel = trnamodel)
 
@@ -198,13 +199,13 @@ transalign = list(readrnastk(open(transcriptstk, "r")))[0]
 transnums = gettrnanums(transalign, margin = 0, orgtype = orgmode, mode = "transcript")
 alignnumfile = open(dbdirectory+dbname+"-alignnum.txt", "w")
 for i, currbase in enumerate(transalign.consensus):
-    print >>alignnumfile, "\t".join([str(i), transalign.consensus[i], transalign.currstruct[i], transnums[i]])
+    print("\t".join([str(i), transalign.consensus[i], transalign.currstruct[i], transnums[i]]), file=alignnumfile)
 alignnumfile.close()
 locialign = list(readrnastk(open(locusstk, "r")))[0]
 locinums = gettrnanums(locialign, margin = 0, orgtype = orgmode, mode = "locus")
 locinumfile = open(dbdirectory+dbname+"-locusnum.txt", "w")
 for i, currbase in enumerate(locialign.consensus):
-    print >>locinumfile, "\t".join([str(i), locialign.consensus[i], locialign.currstruct[i], locinums[i]])
+    print("\t".join([str(i), locialign.consensus[i], locialign.currstruct[i], locinums[i]]), file=locinumfile)
 
 
 locinumfile.close()
@@ -231,7 +232,7 @@ if addseqs:
             continue
         seqsname = fields[0]   
         seqsfile = fields[1]
-        print >>otherseqs, seqsname + "\t"+dbname+"-"+seqsname+"_seq.fa"+"\t"+dbname+"-"+seqsname+"_seq.bed"
+        print(seqsname + "\t"+dbname+"-"+seqsname+"_seq.fa"+"\t"+dbname+"-"+seqsname+"_seq.bed", file=otherseqs)
         seqfiles[fields[0]] = fields[1]
 
         seqbed = open(dbdirectory+dbname+"-"+seqsname+"_seq.bed", "w")
@@ -240,15 +241,15 @@ if addseqs:
             
             if name not in seqcounts:
                 
-                print >>seqfasta, ">"+name
+                print(">"+name, file=seqfasta)
                 seqcounts[name] += 1
             else:
                 
-                print >>seqfasta, ">"+name +"."+str(seqcounts[name])
+                print(">"+name +"."+str(seqcounts[name]), file=seqfasta)
                 seqcounts[name] += 1
-            print >>seqfasta, (20 *"N")+seq.upper()+(20 *"N")
+            print((20 *"N")+seq.upper()+(20 *"N"), file=seqfasta)
         
-            print >>seqbed, "\t".join([name, str(20), str(len(seq) + 20), name,"1000", "+"])
+            print("\t".join([name, str(20), str(len(seq) + 20), name,"1000", "+"]), file=seqbed)
         
         seqbed.close()
     otherseqs.close() 
@@ -265,16 +266,16 @@ gitversion, githash = getgithash(scriptdir)
     
     
 dbinfo = open(dbdirectory+dbname+ "-dbinfo.txt","w")
-print >>dbinfo, "time\t"+str(runtime)+"("+str(loctime[1])+"/"+str(loctime[2])+"/"+str(loctime[0])+")"
-print >>dbinfo, "creation\t"+" ".join(sys.argv)
-print >>dbinfo, "genomefile\t"+str(genomefile)
-print >>dbinfo, "trnascanfile\t"+str(scanfile)
-print >>dbinfo, "orgmode\t"+str(orgmode)
-print >>dbinfo, "forcecca\t"+str(forcecca)
-print >>dbinfo, "git version\t"+str(gitversion)
+print("time\t"+str(runtime)+"("+str(loctime[1])+"/"+str(loctime[2])+"/"+str(loctime[0])+")", file=dbinfo)
+print("creation\t"+" ".join(sys.argv), file=dbinfo)
+print("genomefile\t"+str(genomefile), file=dbinfo)
+print("trnascanfile\t"+str(scanfile), file=dbinfo)
+print("orgmode\t"+str(orgmode), file=dbinfo)
+print("forcecca\t"+str(forcecca), file=dbinfo)
+print("git version\t"+str(gitversion), file=dbinfo)
 
 if addseqs:
-    print >>dbinfo, "additional transcripts\t"+" ".join(name+":"+source for name, source in seqfiles.iteritems())
+    print("additional transcripts\t"+" ".join(name+":"+source for name, source in seqfiles.items()), file=dbinfo)
 
 dbinfo.close()
 cores = None

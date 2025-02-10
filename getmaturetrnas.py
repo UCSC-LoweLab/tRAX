@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import re
 import os
@@ -28,6 +28,7 @@ def main(**args):
     gtrnatrans = None
     prokmode = args["prokmode"]
     if args["namemap"]:
+        
         gtrnafa = open(args["namemap"], "r")
         gtrnatrans = dict()
         for currline in gtrnafa:
@@ -43,7 +44,7 @@ def main(**args):
         #sys.exit()
     elif args["gtrnafa"]:
         trnanamere = re.compile(r"^\>\S+_((?:\w+\-)?tRNA\-\w+\-[\w\?]+\-\d+\-\d+)\s+\((?:tRNAscan\-SE\s+ID:\s+)?(\S+)\)")
-
+        
         gtrnafa = open(args["gtrnafa"], "r")
         gtrnatrans = dict()
         for currline in gtrnafa:
@@ -56,9 +57,9 @@ def main(**args):
             elif currline.startswith(">"):
                 pass
                 #print >>sys.stderr, currline
-        if len(gtrnatrans.keys()) == 0:
-            print >>sys.stderr, "Could not extract names from gtrnadb fasta file"
-            print >>sys.stderr, "must have names in format '>Saccharomyces_cerevisiae_tRNA-Ala-AGC-1-10 (tRNAscan-SE ID: chrXIII.trna9)'"
+        if len(list(gtrnatrans.keys())) == 0:
+            print("Could not extract names from gtrnadb fasta file", file=sys.stderr)
+            print("must have names in format '>Saccharomyces_cerevisiae_tRNA-Ala-AGC-1-10 (tRNAscan-SE ID: chrXIII.trna9)'", file=sys.stderr)
             sys.exit()
             
     
@@ -68,12 +69,16 @@ def main(**args):
     trnadbtrnas = list()
     trnacentraltrnas = list()
     for currfile in args["trnascan"]:
+        
         if gtrnatrans:
+            #print >>sys.stderr, "||**"
             trnadbtrnas.extend(readtRNAdb(currfile, genomefile, gtrnatrans))
         else:
+            #print >>sys.stderr, "||**||"
             trnascantrnas.extend(readtRNAscan(currfile, genomefile))
             #print >>sys.stderr, len(trnascantrnas)
-            
+    #print >>sys.stderr, len(trnascantrnas)
+    #print >>sys.stderr, len(trnadbtrnas)
     #print >>sys.stderr, "||**"
     '''
     for currfile in args["trnascan"]:
@@ -91,15 +96,22 @@ def main(**args):
             #print >>sys.stderr,currname
             #print >>sys.stderr,currseq
             if len(namefields) != 4: #or namefields[0] != "newtRNA":
-                print >>sys.stderr, "additional tRNA "+currname+" from "+args["addtrna"] +" does not use a valid tRNA name"
-                print >>sys.stderr, "valid named in the format 'newtRNA-xxx-NNN-1-1'"
-                print >>sys.stderr, len(namefields) 
+                print("additional tRNA "+currname+" from "+args["addtrna"] +" does not use a valid tRNA name", file=sys.stderr)
+                print("valid named in the format 'newtRNA-xxx-NNN-1-1'", file=sys.stderr)
+                print(len(namefields), file=sys.stderr) 
                 sys.exit(1)
                 pass
             
-            
-            extratrnas.append(tRNAtranscript(currseq.replace("U","T"), None, namefields[1], namefields[2], [], None, name = currname, artificialtrna = True))
+            curramino = namefields[1]
+            currac = namefields[2]
+            if curramino == "Und":
+                curramino = "Undet"
+            extratrnas.append(tRNAtranscript(currseq.replace("U","T"), None, curramino, currac, [], None, name = currname, artificialtrna = True))
     alltrnas = list(getuniquetRNAs(trnascantrnas)) + trnacentraltrnas + trnadbtrnas + extratrnas
+    
+    for currtrna in alltrnas:
+        #print(currtrna.name, file = sys.stderr)
+        pass
     trnabed = None
     if args["bedfile"]:
         trnabed = open(args["bedfile"], "w")
@@ -137,16 +149,19 @@ def main(**args):
 
         
     stkfile = args["trnaalignment"]
+    if len(alltrnas) == 0:
+        print("No trna sequences", file=sys.stderr)
+        sys.exit(1)
     if args["trnaalignment"]:
         devnull = open(os.devnull, 'w')
         seqfile = tempmultifasta(((currtrans.name, currtrans.getmatureseq(addcca = not prokmode)) for currtrans in alltrnas))
         cmcommand = ['cmalign', "-o", stkfile,"--nonbanded", "--notrunc","-g",trnacmfile,seqfile.name]
         
-        cmrun = subprocess.Popen(cmcommand, stdout = devnull)
+        cmrun = subprocess.Popen(cmcommand, stdout = devnull,universal_newlines=True )
         result = cmrun.wait()
         if result:
-            print >>sys.stderr, " ".join(cmcommand)
-            print >>sys.stderr, "Failure to align tRNAs"
+            print(" ".join(cmcommand), file=sys.stderr)
+            print("Failure to align tRNAs", file=sys.stderr)
 
             sys.exit(1)
         seqfile.close()
@@ -161,30 +176,30 @@ def main(**args):
         #trnanames[name] = currtrans
         trnalist.append(name)
         #print >>sys.stderr, name
-        print >>maturetrnafa, ">"+name
+        print(">"+name, file=maturetrnafa)
         matureseq = currtrans.getmatureseq(addcca = not prokmode)
-        print >>maturetrnafa, str("N" * margin) +matureseq+str("N" * margin)
+        print(str("N" * margin) +matureseq+str("N" * margin), file=maturetrnafa)
         locinames = ",".join(currlocus.name for currlocus in currtrans.loci)
         if locinames == "":
             locinames = "NA"
         if trnatable is not None:
-            print >>trnatable, "\t".join([name,locinames,currtrans.amino,currtrans.anticodon])
+            print("\t".join([name,locinames,currtrans.amino,currtrans.anticodon]), file=trnatable)
         if trnabed is not None:
             transcriptrange = GenomeRange("genome", name, margin, margin + len(matureseq), strand = "+", name = name)
-            print >>trnabed, transcriptrange.bedstring()
+            print(transcriptrange.bedstring(), file=trnabed)
         if args["locibed"]:
             itemrgb = "0"
             for currlocus in currtrans.loci:
                 pass
                 trnalength = currlocus.loc.end - currlocus.loc.start
                 if currlocus.intron is None:
-                    print >>locibed, currlocus.loc.bedstring()+"\t"+"\t".join([str(currlocus.loc.start), str(currlocus.loc.end),itemrgb,"1",str(trnalength),"0"])
+                    print(currlocus.loc.bedstring()+"\t"+"\t".join([str(currlocus.loc.start), str(currlocus.loc.end),itemrgb,"1",str(trnalength),"0"]), file=locibed)
                 else:
                     
                     blockcounts = 2
                     blocksizes = str(currlocus.intron[0] + 1)+","+str(trnalength - currlocus.intron[1] - 1)
                     blockstarts = "0,"+str(currlocus.intron[1] + 1)
-                    print >>locibed, currlocus.loc.bedstring()+"\t"+"\t".join([str(currlocus.loc.start), str(currlocus.loc.end),itemrgb,str(blockcounts),str(blocksizes),str(blockstarts)])
+                    print(currlocus.loc.bedstring()+"\t"+"\t".join([str(currlocus.loc.start), str(currlocus.loc.end),itemrgb,str(blockcounts),str(blocksizes),str(blockstarts)]), file=locibed)
 
     
     
