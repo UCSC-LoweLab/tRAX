@@ -266,7 +266,7 @@ currplot <- ggplot(trnacounts, aes(x=!!ensym(xaxis), y=!!ensym(yaxis))) + geom_p
 ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatter",outputformat,sep= ""), currplot, width = 8, height = 8)
 currplot = currplot + facet_wrap(~type, ncol = 3)
 ggsave(paste(experimentname,"/",comparisons[i,1],"_",comparisons[i,2] ,"-typescatterfacet",outputformat,sep= ""), currplot, width = 14, height = length(unique(trnacounts$type)))
-print("***||")
+#print("***||")
 
 trnacounts$logfc = log2(trnacounts[,xaxis]) -  log2(trnacounts[,yaxis])
 #print(head(trnacounts))

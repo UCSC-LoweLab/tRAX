@@ -157,7 +157,7 @@ ggsave(filename=filename, coverage,height=scalefactor*(2 + 1.5*length(unique(cov
 
 
 makecombplot <-  function(covdata, filename, indepscales = FALSE){
-    print("||**|||")
+    #print("||**|||")
     smallcovsummary <- ggplot(covdata,aes(x=variable,y=value, fill = amino, order = as.numeric(sortacceptor)),width = 2, size = 2) + 
     geom_bar(stat="identity")+ 
     
@@ -166,9 +166,9 @@ makecombplot <-  function(covdata, filename, indepscales = FALSE){
     #scale_y_continuous(breaks=breakfunc) +
     scale_x_discrete(breaks=c(1,37,76), labels=c("start","anticodon","end"),expand = c(0.05, .01)) +
     scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
-    print("***")
-    print(levels(covdata$variable))
-    print(unique(covdata$variable))
+    #print("***")
+    #print(levels(covdata$variable))
+    #print(unique(covdata$variable))
     if(indepscales){
     smallcovsummary = smallcovsummary + facet_wrap( ~ Sample, scales="free",ncol = 10)
     }else{
@@ -715,7 +715,7 @@ allmultmelt$amino = acceptorType
 #q()
 #print("**||2")
 #amino specific plots                
-print("**||2")
+#print("**||2")
 #write.table(allmultmelt, file = "cov.txt")
 
 #print(head(allmultmelt))
@@ -837,12 +837,12 @@ sortacceptor <- acceptorType[order(locicoverages$variable, locicoverages$Sample,
 #print(unique(sortacceptor))
 #print(unique(locicoverages$Sample))
 #print(unique(sortcovmelt$variable))
-print("***||&&")
+#print("***||&&")
 locuscombinedname = paste(opt$directory,"/pretRNAs/",runname,"-pretRNAcombinedcoverage.pdf", sep = "")
 makelocuscombplot(sortcovmelt, locuscombinedname) 
 #covsummary <- ggplot(sortcovmelt,aes(x=variable,y=value, fill = sortacceptor, order = as.numeric(sortacceptor))) + facet_grid( ~ Sample, scales="free") +xlab("Position")+ geom_bar(stat="identity")+theme_bw()+theme(axis.text.y=element_text(colour="black",size=8), strip.text.y = element_text(angle=0,size=4),strip.text.x = element_text(angle=0,size=8),axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5,size=8))+ ylab("Read Share") +   scale_y_continuous(breaks=myBreaks, labels = c("0","1")) +scale_x_discrete(breaks=c("1","13","22","31","39","53","61","73"), labels=c(fiveprimename,dstartname,dendname,acstartname,acendname,tstartname,tendname,ccatailname)) +scale_fill_discrete(drop=FALSE, name="Acceptor\ntype", breaks = levels(sortacceptor))
 #ggsave(filename=locuscombinedname,covsummary)
-print("***||")
+#print("***||")
 allmultmelt <- sortcovmelt
 
 

@@ -13,6 +13,11 @@ from collections import defaultdict
 
 allaminos = ('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Ile2','Leu','Lys','Met','iMet','fMet','Phe','Pro','Ser','Thr','Trp','Tyr','Val','SeC','Sup','Undet')
 
+if sys.version_info[0] < 3:
+    print("tRAX now requires python3, version " +str(sys.version_info[0]) +" too low",file=sys.stderr)
+    sys.exit(1)
+
+
 def readmultifasta(fafile):
     #print chrom+":"+ chromstart+"-"+ chromendre
     if fafile == "stdin":
